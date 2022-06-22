@@ -11,12 +11,18 @@
   "license": "ISC",
   "dependencies": {
     "chalk": "^4.1.2",
+    "dotenv": "^16.0.1",
     "listr": "^0.14.3",
+    "node-cron": "^3.0.1",
     "node-fetch": "^2.6.7",
     "nodemw": "^0.16.0",
     "parse-wikitext": "^1.0.0"
   },
   "devDependencies": {
-    "eslint": "^8.18.0"
+    "eslint": "^8.18.0",
+    "eslint-config-standard": "^17.0.0",
+    "eslint-plugin-import": "^2.26.0",
+    "eslint-plugin-n": "^15.2.3",
+    "eslint-plugin-promise": "^6.0.0"
   }
 }

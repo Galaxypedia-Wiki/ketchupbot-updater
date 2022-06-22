@@ -4,3 +4,4 @@ services:
         container_name: gpedia-updater
         build: .
         restart: always
+        env_file: .env

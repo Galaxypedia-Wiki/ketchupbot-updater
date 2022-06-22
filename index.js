@@ -52,11 +52,14 @@ async function getShipData(shipname) {
 		}
 	}
 
+	if (!shipdata[shipname]) return 33;
+
 	return shipdata[shipname];
 }
 
 async function processShip(shipname, wikitext) {
 	const shipdata = await getShipData(shipname);
+	if (shipdata == 33) return 33;
 	const matches = wikitext.match(regex);
 	if (!matches) {
 		console.log('No infobox found!');
@@ -108,7 +111,7 @@ async function update(ship) {
 
 	const processed = await processShip(ship, article);
 
-	if (processed == 23 || processed == 22) return;
+	if (processed == 23 || processed == 22 || processed == 33) return console.warn(chalk.red(`Skipped updating ${ship} due to status code override ${processed}!`));
 
 	await editArticle(ship, processed, 'Automatic Infobox Update', false);
 
@@ -156,9 +159,18 @@ bot.logIn('Ketchupbot101', 'Small-Bot123', async (err) => {
 
 	}, 1000);
 
-	const testarray = ['Bonehawk', 'Stormbringer', 'Leviathan', 'Frostpocalypse', 'Jackal'];
+	const allshipsraw = await fetch('https://robloxgalaxy.wiki/api.php?action=query&format=json&list=categorymembers&cmtitle=Category%3AShips&cmlimit=5000').then(response => response.json());
 
-	for (const ship of testarray) {
-		await prepare(ship);
+	const shipsfiltered = Object.entries(allshipsraw.query.categorymembers).filter(key => {
+		const title = key[1].title;
+		if (title.toString().startsWith('Category:')) return false;
+		return key[1].title;
+	});
+
+	const ships = shipsfiltered.map(e => e[1].title);
+
+	for (const ship of ships) {
+		await prepare(ship.toString());
 	}
+	console.log(chalk.greenBright('Complete!'));
 });

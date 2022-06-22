@@ -1,0 +1,22 @@
+{
+  "name": "gpediaupdater-prototype",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "chalk": "^4.1.2",
+    "listr": "^0.14.3",
+    "node-fetch": "^2.6.7",
+    "nodemw": "^0.16.0",
+    "parse-wikitext": "^1.0.0"
+  },
+  "devDependencies": {
+    "eslint": "^8.18.0"
+  }
+}

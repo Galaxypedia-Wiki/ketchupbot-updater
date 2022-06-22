@@ -10,6 +10,7 @@ const { promisify } = require('util');
 const verbose = process.env.verbose || false;
 const regex = /{{\s*Ship[ _]Infobox[ _]Template.*?}}/si;
 var interactive = false;
+const disc_webhook = 'https://discord.com/api/webhooks/989011701619892285/224ie95dP5VRPH7eNHH56HzMN6iTc5i_tj7bI7_V33ACHhc5TFx8B8zr7lPlOUk1YuA8';
 
 var bot = new nodemw({
 	protocol: 'https',
@@ -113,6 +114,9 @@ async function update(ship) {
 	await editArticle(ship, processed, 'Automatic Infobox Update', false);
 
 	console.log(chalk.green(`Updated ${ship}!`));
+	fetch(disc_webhook, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
+		'content': `Updated ${ship}!`,
+	}) });
 
 	return processed;
 }
@@ -148,10 +152,10 @@ bot.logIn('Ketchupbot101', 'Small-Bot123', async (err) => {
 	for (const ship of testarray) {
 		const article = await getArticle(ship);
 		if (article) {
-			console.log(`${ship} exists!`);
+			console.log(chalk.yellow(`${ship} exists!`));
 			await update(ship);
 		} else {
-			console.log(`${ship} does not exist!`);
+			console.log(chalk.yellow(`${ship} does not exist!`));
 		}
 	}
 });

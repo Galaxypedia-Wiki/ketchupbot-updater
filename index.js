@@ -9,7 +9,6 @@ const { promisify } = require('util');
 // Settings
 const verbose = process.env.verbose || false;
 const regex = /{{\s*Ship[ _]Infobox[ _]Template.*?}}/si;
-var interactive = false;
 const disc_webhook = 'https://discord.com/api/webhooks/989011701619892285/224ie95dP5VRPH7eNHH56HzMN6iTc5i_tj7bI7_V33ACHhc5TFx8B8zr7lPlOUk1YuA8';
 
 var bot = new nodemw({
@@ -121,6 +120,16 @@ async function update(ship) {
 	return processed;
 }
 
+async function prepare(ship) {
+	const article = await getArticle(ship);
+	if (article) {
+		console.log(chalk.yellow(`${ship} exists!`));
+		await update(ship);
+	} else {
+		console.log(chalk.yellow(`${ship} does not exist!`));
+	}
+}
+
 bot.logIn('Ketchupbot101', 'Small-Bot123', async (err) => {
 	if (err) return err;
 
@@ -150,12 +159,6 @@ bot.logIn('Ketchupbot101', 'Small-Bot123', async (err) => {
 	const testarray = ['Bonehawk', 'Stormbringer', 'Leviathan', 'Frostpocalypse', 'Jackal'];
 
 	for (const ship of testarray) {
-		const article = await getArticle(ship);
-		if (article) {
-			console.log(chalk.yellow(`${ship} exists!`));
-			await update(ship);
-		} else {
-			console.log(chalk.yellow(`${ship} does not exist!`));
-		}
+		await prepare(ship);
 	}
 });

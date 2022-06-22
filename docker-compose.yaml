@@ -1,0 +1,6 @@
+services:
+    gpedia-updater:
+        image: gpedia-updater
+        container_name: gpedia-updater
+        build: .
+        restart: always

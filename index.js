@@ -4,10 +4,12 @@ const fetch = require('node-fetch');
 var nodemw = require('nodemw');
 const fs = require('fs');
 const chalk = require('chalk');
+const { promisify } = require('util');
 
 // Settings
-const verbose = true;
+const verbose = process.env.verbose || false;
 const regex = /{{\s*Ship[ _]Infobox[ _]Template.*?}}/si;
+var interactive = false;
 
 var bot = new nodemw({
 	protocol: 'https',
@@ -15,6 +17,10 @@ var bot = new nodemw({
 	path: '/',
 	debug: verbose,
 });
+
+const getArticle = promisify(bot.getArticle.bind(bot));
+const editArticle = promisify(bot.edit.bind(bot));
+const getArticleWikitext = promisify(wikiTextParser.getArticle.bind(wikiTextParser));
 
 // Fetch all ship data
 async function getAllShipData() {
@@ -73,9 +79,15 @@ async function processShip(shipname, wikitext) {
 	if (verbose) console.log('Ship Data Collected from API\n' + JSON.stringify(shipdata, null, '\t'));
 	if (verbose) console.log('Ship Data Merged\n' + JSON.stringify(data, null, '\t'));
 
-	const newCode = wikitext.replace(regex, '{{Ship Infobox Template\n|' + Object.entries(data).map(([key, val]) => `${key} = ${val}`).join('\n|') + '\n}}');
+	const newCode = wikitext.replace(regex, '{{Ship Infobox Template\n|' + Object.entries(data).map(([key, val]) => {
+		if (key.includes('turret')) {
+			return `${key} = ${val.toString().replaceAll('\n', '\n\n')}`;
+		} else {
+			return `${key} = ${val}`;
+		}
+	}).join('\n|') + '\n}}');
 	if (newCode === wikitext) {
-		if (verbose) console.log(`${shipname} is up to date!`);
+		console.log(chalk.green(`${shipname} is up to date!`));
 		return 22; // Up to date
 	}
 
@@ -86,26 +98,24 @@ async function processShip(shipname, wikitext) {
 		console.log(newCode);
 	}
 
-	console.log(chalk.green('Successfully processed ') + chalk.cyanBright(`${shipname}!`));
+	console.log(chalk.yellow('Processed ') + chalk.cyanBright(`${shipname}!`));
 
 	return newCode;
 }
 
 async function update(ship) {
-	wikiTextParser.getArticle(ship, async function(err, data) {
-		if (err) return console.error(err);
-		const processed = await processShip(ship, data);
+	const article = await getArticleWikitext(ship);
 
-		bot.edit(ship, processed, 'Automatic Infobox Update', false, (err) => {
-			if (err) throw 'Unknown error while trying to edit page';
-		});
+	const processed = await processShip(ship, article);
 
-		return processed;
-	});
+	if (processed == 23 || processed == 22) return;
+
+	await editArticle(ship, processed, 'Automatic Infobox Update', false);
+
+	console.log(chalk.green(`Updated ${ship}!`));
+
+	return processed;
 }
-
-const { promisify } = require('util');
-const getArticle = promisify(bot.getArticle.bind(bot));
 
 bot.logIn('Ketchupbot101', 'Small-Bot123', async (err) => {
 	if (err) return err;
@@ -133,8 +143,9 @@ bot.logIn('Ketchupbot101', 'Small-Bot123', async (err) => {
 
 	}, 1000);
 
+	const testarray = ['Bonehawk', 'Stormbringer', 'Leviathan', 'Frostpocalypse', 'Jackal'];
 
-	for (const ship in thankuyname) {
+	for (const ship of testarray) {
 		const article = await getArticle(ship);
 		if (article) {
 			console.log(`${ship} exists!`);

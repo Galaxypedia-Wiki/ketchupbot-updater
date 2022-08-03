@@ -140,17 +140,17 @@ class GalaxypediaUpdater {
 		if (data.image1 && data.image1.startsWith("<gallery")) data.image1 = wikitext.match(/<gallery.*?>.*?<\/gallery>/sg)[0]
 		
 		// Sort the json alphabetically
-		let sorted = {},
-			key, a = []
-		
+		const sorted = {}
+		const keys = []
+    
 		for (const key in data) {
-			a.push(key)
+			keys.push(key)
 		}
-		
-		a.sort((a, b) => a.localeCompare(b))
-		
-		for (key = 0; key < a.length; key++) {
-			sorted[a[key]] = data[a[key]]
+    
+		keys.sort((a, b) => a.localeCompare(b))
+    
+		for (const key of keys) {
+			sorted[key] = data[key]
 		}
 		
 		if (verbose) console.log("Ship Data Raw\n" + JSON.stringify(data, null, "\t"))
@@ -215,6 +215,7 @@ class GalaxypediaUpdater {
 
 (async () => {
 	console.log((await fs.readFile("banner.txt")).toString())
+	console.log("Written by smallketchup82 & yname\n\n")
 	const galaxypediaUpdater = new GalaxypediaUpdater()
 	await galaxypediaUpdater.main(process.env.MW_LOGIN, process.env.MW_PASS)
 })()

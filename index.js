@@ -139,20 +139,6 @@ class GalaxypediaUpdater {
 		var data = wikiTextParser.parseTemplate(matches[0]).namedParts
 		if (data.image1 && data.image1.startsWith("<gallery")) data.image1 = wikitext.match(/<gallery.*?>.*?<\/gallery>/sg)[0]
 		
-		// Sort the json alphabetically
-		const sorted = {}
-		const keys = []
-    
-		for (const key in data) {
-			keys.push(key)
-		}
-    
-		keys.sort((a, b) => a.localeCompare(b))
-    
-		for (const key of keys) {
-			sorted[key] = data[key]
-		}
-		
 		if (verbose) console.log("Ship Data Raw\n" + JSON.stringify(data, null, "\t"))
 		return data
 	}
@@ -170,8 +156,22 @@ class GalaxypediaUpdater {
 			mergeObjectIn(obj)
 		}
 
-		if (verbose) console.log("Ship Data Merged: ", { objects, data })
-		return data
+		// Sort the json alphabetically
+		const sorted = {}
+		const keys = []
+	
+		for (const key in data) {
+			keys.push(key)
+		}
+	
+		keys.sort((a, b) => a.localeCompare(b))
+	
+		for (const key of keys) {
+			sorted[key] = data[key]
+		}
+
+		if (verbose) console.log("Ship Data Merged: ", { objects, sorted })
+		return sorted
 	}
 
 	async formatDataIntoWikitext (data, oldWikitext) {

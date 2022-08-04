@@ -52,7 +52,7 @@ class GalaxypediaUpdater {
 				console.log(`${chalk.red("[!]")} Dry run is enabled! Halting for 5 seconds, terminate program if unintentional.`)
 				await new Promise(resolve => setTimeout(resolve, 5000))
 			}
-			this.logDiscord("Starting mass update!")
+			this.logDiscord("Automatically updating the Galaxypedia!")
 			this.shipsData = await this.getShipsData()
 			this.galaxypediaShipList = await this.getGalaxypediaShipList()
 			await this.updateShips()
@@ -88,7 +88,6 @@ class GalaxypediaUpdater {
 			await this.handleShip(this.shipsData[shipName])
 		}
 		console.log(chalk.greenBright("Complete!"))
-		this.logDiscord("Finished mass update!")
 	}
 
 	async handleShip (ship) {

@@ -33,6 +33,7 @@ class GalaxypediaUpdater {
 		this.editArticle = promisify(this.bot.edit.bind(this.bot))
 		this.getArticleWikitext = promisify(wikiTextParser.getArticle.bind(wikiTextParser))
 		this.logIn = promisify(this.bot.logIn.bind(this.bot))
+		this.getArticleRevisions = promisify(this.bot.getArticleRevisions.bind(this.bot))
 
 		await this.logIn(username, password)
 		cron.schedule("0 * * * *", () => this.updateGalaxypediaShips())
@@ -47,8 +48,10 @@ class GalaxypediaUpdater {
 			}
 			this.currentlyUpdating = true
 
-			console.log(`${chalk.red("[!]")} Dry run is enabled! Halting for 5 seconds, terminate program if unintentional.`)
-			await new Promise(resolve => setTimeout(resolve, 5000))
+			if (dryrun) {
+				console.log(`${chalk.red("[!]")} Dry run is enabled! Halting for 5 seconds, terminate program if unintentional.`)
+				await new Promise(resolve => setTimeout(resolve, 5000))
+			}
 			this.logDiscord("Starting mass update!")
 			this.shipsData = await this.getShipsData()
 			this.galaxypediaShipList = await this.getGalaxypediaShipList()
@@ -93,9 +96,24 @@ class GalaxypediaUpdater {
 		try {
 			console.log(`${chalk.yellow("Processing ")} ${chalk.cyanBright(ship.title)}...`)
 			const steps = await this.updateShip(ship)
+
+			// Grab the most recent edit made by the bot & send the revid to the discord webhook logger
+			var latestrevision = (await this.getArticleRevisions(ship.title)).reverse()
+			var revision = null
+			if (latestrevision && latestrevision[0].user && latestrevision[0].revid) {
+				latestrevision = await latestrevision.filter((val) => val.user === process.env.MW_LOGIN)[0]
+				if (latestrevision && latestrevision.user && latestrevision.revid) {
+					const timestamp = new Date(latestrevision.timestamp)
+					const rn = new Date()
+					if (timestamp.getDate() === rn.getDate() && timestamp.getMonth() === rn.getMonth() && timestamp.getFullYear() === rn.getFullYear()) {
+						revision = latestrevision
+					}
+				}
+			}
+
 			const perf = verbose ? ` perf: ${steps.join(", ")}` : ""
 			console.log(`${chalk.green("Updated")} ${chalk.cyanBright(ship.title)}!` + perf)
-			await this.logChange(ship.title)
+			await this.logChange(ship.title, revision)
 		} catch (error) {
 			console.log(`${chalk.red("[!]")} ${chalk.cyanBright(ship.title)}: ${chalk.red(error.message)}`)
 		}
@@ -186,7 +204,7 @@ class GalaxypediaUpdater {
 		return newWikitext
 	}
 
-	async logChange (shipName) {
+	async logChange (shipName, revision) {
 		if (dryrun) return
 		await fetch(process.env.WEBHOOK, {
 			method: "POST",
@@ -194,7 +212,7 @@ class GalaxypediaUpdater {
 				"Content-Type": "application/json"
 			},
 			body: JSON.stringify({
-				content: `Updated **${shipName}**!`
+				content: `Updated **${shipName}**! ${(revision ? `([diff](<https://robloxgalaxy.wiki/index.php?title=${encodeURIComponent(shipName)}&diff=prev&oldid=${encodeURIComponent(revision.revid)}>))` : "")}`
 			})
 		})
 	}
@@ -215,7 +233,7 @@ class GalaxypediaUpdater {
 
 (async () => {
 	console.log((await fs.readFile("banner.txt")).toString())
-	console.log("Written by smallketchup82 & yname\n\n")
+	console.log("Written by smallketchup82 & yname\n---------------------------------")
 	const galaxypediaUpdater = new GalaxypediaUpdater()
 	await galaxypediaUpdater.main(process.env.MW_LOGIN, process.env.MW_PASS)
 })()

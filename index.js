@@ -52,7 +52,6 @@ class GalaxypediaUpdater {
 				console.log(`${chalk.red("[!]")} Dry run is enabled! Halting for 5 seconds, terminate program if unintentional.`)
 				await new Promise(resolve => setTimeout(resolve, 5000))
 			}
-			this.logDiscord("Automatically updating the Galaxypedia!")
 			this.shipsData = await this.getShipsData()
 			this.galaxypediaShipList = await this.getGalaxypediaShipList()
 			await this.updateShips()

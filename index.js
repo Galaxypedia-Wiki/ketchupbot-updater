@@ -65,7 +65,7 @@ class GalaxypediaUpdater {
 
 	async getShipsData () {
 		const response = await fetch(`https://galaxy.wingysam.xyz/api/v2/galaxypedia?token=${process.env.GALAXY_INFO_TOKEN}`)
-		if (!response.ok) throw new Error("Galaxy Info seems to be down.")
+		if (!response.ok) throw new Error("Galaxy Info seems to be down")
 		const galaxyInfoShips = await response.json()
 		return galaxyInfoShips
 	}

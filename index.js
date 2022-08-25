@@ -13,7 +13,7 @@ const { performance } = require("perf_hooks")
 // Settings
 const verbose = process.env.VERBOSE === "true"
 const dryrun = process.env.DRYRUN === "true"
-const SHIP_INFOBOX_TEMPLATE_REGEX = /{{\s*Ship[ _]Infobox[ _]Template.*?}}/si
+const SHIP_INFOBOX_REGEX = /{{\s*Ship[ _]Infobox.*?}}/si
 
 const SHIP_NAME_MAP = {
 	2018: "2018 Ship",
@@ -149,8 +149,8 @@ class GalaxypediaUpdater {
 	}
 
 	async parseWikitext (wikitext) {
-		const matches = wikitext.match(SHIP_INFOBOX_TEMPLATE_REGEX)
-		if (!matches) throw new Error("Could not find infobox wikitext")
+		const matches = wikitext.match(SHIP_INFOBOX_REGEX)
+		if (!matches) throw new Error("Could not find infobox!")
 
 		var data = wikiTextParser.parseTemplate(matches[0]).namedParts
 		if (data.image1 && data.image1.startsWith("<gallery")) data.image1 = wikitext.match(/<gallery.*?>.*?<\/gallery>/sg)[0]
@@ -191,7 +191,7 @@ class GalaxypediaUpdater {
 	}
 
 	async formatDataIntoWikitext (data, oldWikitext) {
-		const newWikitext = oldWikitext.replace(SHIP_INFOBOX_TEMPLATE_REGEX, "{{Ship Infobox Template\n|" + Object.entries(data).map(([key, val]) => `${key} = ${val}`).join("\n|") + "\n}}")
+		const newWikitext = oldWikitext.replace(SHIP_INFOBOX_REGEX, "{{Ship Infobox\n|" + Object.entries(data).map(([key, val]) => `${key} = ${val}`).join("\n|") + "\n}}")
 
 		if (verbose) {
 			console.log(chalk.blueBright("------------ OLD PAGE WIKITEXT ------------"))

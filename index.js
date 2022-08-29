@@ -13,29 +13,23 @@ const { performance } = require("perf_hooks")
 // Settings
 const verbose = process.env.VERBOSE === "true"
 const dryrun = process.env.DRYRUN === "true"
-const SHIP_INFOBOX_REGEX = /{{\s*Ship[ _]Infobox.*?}}/si
 
 const SHIP_NAME_MAP = {
 	2018: "2018 Ship",
 	yname: "Yname (ship)"
 }
 
-class GalaxypediaUpdater {
-	async main (username, password) {
-		this.bot = new NodeMW({
-			protocol: "https",
-			server: "robloxgalaxy.wiki",
-			path: "/",
-			debug: verbose
-		})
-
+class ShipUpdater {
+	async main(bot, logChange, logDiscord) {
+		this.SHIP_INFOBOX_REGEX = /{{\s*Ship[ _]Infobox.*?}}/si
+		this.bot = bot
+		this.logChange = logChange
+		this.logDiscord = logDiscord
 		this.getArticle = promisify(this.bot.getArticle.bind(this.bot))
 		this.editArticle = promisify(this.bot.edit.bind(this.bot))
 		this.getArticleWikitext = promisify(wikiTextParser.getArticle.bind(wikiTextParser))
-		this.logIn = promisify(this.bot.logIn.bind(this.bot))
 		this.getArticleRevisions = promisify(this.bot.getArticleRevisions.bind(this.bot))
-
-		await this.logIn(username, password)
+		
 		cron.schedule("0 * * * *", () => this.updateGalaxypediaShips())
 		this.updateGalaxypediaShips()
 	}
@@ -47,11 +41,6 @@ class GalaxypediaUpdater {
 				return
 			}
 			this.currentlyUpdating = true
-
-			if (dryrun) {
-				console.log(`${chalk.red("[!]")} Dry run is enabled! Halting for 5 seconds, terminate program if unintentional.`)
-				await new Promise(resolve => setTimeout(resolve, 5000))
-			}
 			this.shipsData = await this.getShipsData()
 			this.galaxypediaShipList = await this.getGalaxypediaShipList()
 			await this.updateShips()
@@ -86,7 +75,7 @@ class GalaxypediaUpdater {
 		for (const shipName of Object.keys(this.shipsData).sort()) {
 			await this.handleShip(this.shipsData[shipName])
 		}
-		console.log(chalk.greenBright("Complete!"))
+		console.log(chalk.greenBright("Ships updated!"))
 	}
 
 	async handleShip (ship) {
@@ -149,7 +138,7 @@ class GalaxypediaUpdater {
 	}
 
 	async parseWikitext (wikitext) {
-		const matches = wikitext.match(SHIP_INFOBOX_REGEX)
+		const matches = wikitext.match(this.SHIP_INFOBOX_REGEX)
 		if (!matches) throw new Error("Could not find infobox!")
 
 		var data = wikiTextParser.parseTemplate(matches[0]).namedParts
@@ -191,7 +180,7 @@ class GalaxypediaUpdater {
 	}
 
 	async formatDataIntoWikitext (data, oldWikitext) {
-		const newWikitext = oldWikitext.replace(SHIP_INFOBOX_REGEX, "{{Ship Infobox\n|" + Object.entries(data).map(([key, val]) => `${key} = ${val}`).join("\n|") + "\n}}")
+		const newWikitext = oldWikitext.replace(this.SHIP_INFOBOX_REGEX, "{{Ship Infobox\n|" + Object.entries(data).map(([key, val]) => `${key} = ${val}`).join("\n|") + "\n}}")
 
 		if (verbose) {
 			console.log(chalk.blueBright("------------ OLD PAGE WIKITEXT ------------"))
@@ -201,8 +190,104 @@ class GalaxypediaUpdater {
 		}
 		return newWikitext
 	}
+}
 
-	async logChange (shipName, revision) {
+class TurretsUpdater {
+	async main (bot, logChange, logDiscord) {
+		this.TURRET_TABLE_REGEX = /{\|\s*class="wikitable sortable".*?\|}/sig
+		this.bot = bot
+		this.logChange = logChange
+		this.logDiscord = logDiscord
+		this.getArticle = promisify(this.bot.getArticle.bind(this.bot))
+		this.editArticle = promisify(this.bot.edit.bind(bot))
+		this.getArticleWikitext = promisify(wikiTextParser.getArticle.bind(wikiTextParser))
+		this.getArticleRevisions = promisify(this.bot.getArticleRevisions.bind(this.bot))
+		
+		cron.schedule("30 * * * *", () => this.updateGalaxypediaTurrets())
+		this.updateGalaxypediaTurrets()
+	}
+
+	async updateGalaxypediaTurrets() {
+		try {
+			if (this.currentlyUpdating) {
+				console.log(`${chalk.redBright("[!]")} Already updating turrets; not updating`)
+				return
+			}
+			this.currentlyUpdating = true
+
+			const turretsData = await this.getTurretsData()
+			await this.updateTurrets(turretsData)
+		} catch (error) {
+			console.error(error)
+			this.logDiscord(`Mass Turret Update errored: \`${error}\``)
+		}
+
+		this.currentlyUpdating = false
+	}
+
+	async getTurretsData() {
+		const response = await fetch("https://galaxy.wingysam.xyz/api/v2/ships-turrets/raw")
+		if (!response.ok) throw new Error("Galaxy Info seems to be down - Turrets")
+		const galaxyInfoTurrets = await response.json()
+		return galaxyInfoTurrets.serializedTurrets
+	}
+
+	async updateTurrets(turretData) {
+		const turretPageWikitext = await this.getArticleWikitext("Turrets")
+		var cum = turretPageWikitext
+
+		const turrettables = turretPageWikitext.match(this.TURRET_TABLE_REGEX)
+		if (turrettables.length > 6) throw new Error("Irregular number of tables found on Turret page, ensure that the number of tables stays at 6")
+
+		for (const [index, table] of turrettables.entries()) {
+			if (verbose) console.log(index)
+			const tablesplit = table.split("|-")
+	
+			const relevantturrets = Object.entries(turretData).filter(([, data]) => {
+				if (index === 0) return data.TurretType === "Mining"
+				else if (index === 1) return data.TurretType === "Laser"
+				else if (index === 2) return data.TurretType === "Railgun"
+				else if (index === 3) return data.TurretType === "Flak"
+				else if (index === 4) return data.TurretType === "Cannon"
+				else if (index === 5) return data.TurretType === "PDL"
+			})
+			const turretsparsed = relevantturrets.map(([, turret]) => {
+				return `\n|${turret.Name}\n|${turret.Size}\n|${turret.BaseAccuracy.toFixed(4)}\n|${turret.Damage.toFixed()}\n|${turret.Range.toFixed()}\n|${turret.Reload.toFixed(2)}\n|${turret.SpeedDenominator.toFixed()}\n|${turret.DPS.toFixed(2)}`
+			})
+			if (verbose) console.table(turretsparsed)
+			const test = `${tablesplit[0].trim()}\n|-\n${(turretsparsed.join("\n|-")).trim()}\n|}`
+	
+			cum = cum.replace(turrettables[index], test)
+		}
+
+		if (turretPageWikitext === cum) return console.log(chalk.yellowBright("Turrets page is up to date!"))
+
+		if (!dryrun) await this.editArticle("Turrets", cum, "Automatic Turret Update", false)
+		console.log(chalk.greenBright("Updated turrets!😋"))
+	}
+}
+
+(async () => {
+	console.log((await fs.readFile("banner.txt")).toString())
+	console.log("Written by smallketchup82 & yname\n---------------------------------")
+	
+	if (dryrun) {
+		console.log(`${chalk.red("[!]")} Dry run is enabled! Halting for 5 seconds, terminate program if unintentional.`)
+		await new Promise(resolve => setTimeout(resolve, 5000))
+	}
+
+	const bot = new NodeMW({
+		protocol: "https",
+		server: "robloxgalaxy.wiki",
+		path: "/",
+		debug: verbose
+	})
+
+	this.logIn = promisify(bot.logIn.bind(bot))
+
+	await this.logIn(process.env.MW_LOGIN, process.env.MW_PASS)
+
+	async function logChange (name, revision) {
 		if (dryrun) return
 		await fetch(process.env.WEBHOOK, {
 			method: "POST",
@@ -210,12 +295,12 @@ class GalaxypediaUpdater {
 				"Content-Type": "application/json"
 			},
 			body: JSON.stringify({
-				content: `Updated **${shipName}**! ${(revision ? `([diff](<https://robloxgalaxy.wiki/index.php?title=${encodeURIComponent(shipName)}&diff=prev&oldid=${encodeURIComponent(revision.revid)}>))` : "")}`
+				content: `Updated **${name}**! ${(revision ? `([diff](<https://robloxgalaxy.wiki/index.php?title=${encodeURIComponent(name)}&diff=prev&oldid=${encodeURIComponent(revision.revid)}>))` : "")}`
 			})
 		})
 	}
 
-	async logDiscord (content) {
+	async function logDiscord (content) {
 		if (dryrun) return
 		await fetch(process.env.WEBHOOK, {
 			method: "POST",
@@ -227,11 +312,14 @@ class GalaxypediaUpdater {
 			})
 		})
 	}
-}
 
-(async () => {
-	console.log((await fs.readFile("banner.txt")).toString())
-	console.log("Written by smallketchup82 & yname\n---------------------------------")
-	const galaxypediaUpdater = new GalaxypediaUpdater()
-	await galaxypediaUpdater.main(process.env.MW_LOGIN, process.env.MW_PASS)
+	if (process.env.TURRETSONLY === "false") {
+		const shipupdater = new ShipUpdater()
+		await shipupdater.main(bot, logChange, logDiscord)
+	}
+
+	if (process.env.SHIPSONLY === "false") {
+		const turretupdater = new TurretsUpdater()
+		await turretupdater.main(bot, logChange, logDiscord)
+	}
 })()

@@ -252,7 +252,7 @@ class TurretsUpdater {
 				else if (index === 5) return data.TurretType === "PDL"
 			})
 			const turretsparsed = relevantturrets.map(([, turret]) => {
-				return `\n|${turret.Name}\n|${turret.Size}\n|${turret.BaseAccuracy.toFixed(4)}\n|${turret.Damage.toFixed()}\n|${turret.Range.toFixed()}\n|${turret.Reload.toFixed(2)}\n|${turret.SpeedDenominator.toFixed()}\n|${turret.DPS.toFixed(2)}`
+				return `\n| ${turret.Name}\n| ${turret.Size}\n| ${turret.BaseAccuracy.toFixed(4)}\n| ${turret.Damage.toFixed()}\n| ${turret.Range.toFixed()}\n| ${turret.Reload.toFixed(2)}\n| ${turret.SpeedDenominator.toFixed()}\n| ${turret.DPS.toFixed(2)}`
 			})
 			if (verbose) console.table(turretsparsed)
 			const test = `${tablesplit[0].trim()}\n|-\n${(turretsparsed.join("\n|-")).trim()}\n|}`

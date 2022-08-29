@@ -31,7 +31,7 @@ class ShipUpdater {
 		this.getArticleRevisions = promisify(this.bot.getArticleRevisions.bind(this.bot))
 		
 		cron.schedule("0 * * * *", () => this.updateGalaxypediaShips())
-		this.updateGalaxypediaShips()
+		await this.updateGalaxypediaShips()
 	}
 
 	async updateGalaxypediaShips () {
@@ -204,7 +204,7 @@ class TurretsUpdater {
 		this.getArticleRevisions = promisify(this.bot.getArticleRevisions.bind(this.bot))
 		
 		cron.schedule("30 * * * *", () => this.updateGalaxypediaTurrets())
-		this.updateGalaxypediaTurrets()
+		await this.updateGalaxypediaTurrets()
 	}
 
 	async updateGalaxypediaTurrets() {

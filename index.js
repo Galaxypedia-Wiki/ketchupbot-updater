@@ -142,7 +142,7 @@ class ShipUpdater {
 		if (!matches) throw new Error("Could not find infobox!")
 
 		var data = wikiTextParser.parseTemplate(matches[0]).namedParts
-		if (data.image1 && data.image1.startsWith("<gallery")) data.image1 = wikitext.match(/<gallery.*?>.*?<\/gallery>/sg)[0]
+		if (data.image && data.image.startsWith("<gallery")) data.image = wikitext.match(/<gallery.*?>.*?<\/gallery>/sg)[0]
 		
 		if (verbose) console.log("Ship Data Raw\n" + JSON.stringify(data, null, "\t"))
 		return data

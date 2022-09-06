@@ -45,7 +45,7 @@ class ShipUpdater {
 			this.galaxypediaShipList = await this.getGalaxypediaShipList()
 			await this.updateShips()
 		} catch (error) {
-			console.error(error)
+			console.error(error.stack)
 			this.logDiscord("Mass update errored (Check console for more info)")
 		}
 
@@ -102,7 +102,7 @@ class ShipUpdater {
 			console.log(`${chalk.green("Updated")} ${chalk.cyanBright(ship.title)}!` + perf)
 			await this.logChange(ship.title, revision)
 		} catch (error) {
-			console.log(`${chalk.red("[!]")} ${chalk.cyanBright(ship.title)}: ${chalk.red(error.message)}`)
+			console.error(`${chalk.red("[!]")} ${chalk.cyanBright(ship.title)}: ${chalk.red(error.message)}`)
 		}
 	}
 
@@ -218,8 +218,8 @@ class TurretsUpdater {
 			const turretsData = await this.getTurretsData()
 			await this.updateTurrets(turretsData)
 		} catch (error) {
-			console.error(error)
-			this.logDiscord(`Mass Turret Update errored: \`${error}\``)
+			console.error(error.stack)
+			this.logDiscord("Mass Turret Update errored (Check console for more information)")
 		}
 
 		this.currentlyUpdating = false
@@ -260,7 +260,7 @@ class TurretsUpdater {
 			cum = cum.replace(turrettables[index], test)
 		}
 
-		if (turretPageWikitext === cum) return console.log(chalk.yellowBright("Turrets page is up to date!"))
+		if (turretPageWikitext === cum) return console.log(chalk.greenBright("Turrets page is up to date!"))
 
 		if (!dryrun) await this.editArticle("Turrets", cum, "Automatic Turret Update", false)
 		console.log(chalk.greenBright("Updated turrets!😋"))

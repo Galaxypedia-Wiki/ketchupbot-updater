@@ -1,26 +1,38 @@
-require("dotenv").config()
+import dotenv from "dotenv"
+dotenv.config()
 
 const WikiTextParser = require("parse-wikitext")
 const wikiTextParser = new WikiTextParser("robloxgalaxy.wiki")
-const fetch = require("node-fetch")
+import fetch from "node-fetch"
 const NodeMW = require("nodemw")
-const chalk = require("chalk")
-const { promisify } = require("util")
-const cron = require("node-cron")
-const fs = require("fs/promises")
-const { performance } = require("perf_hooks")
+import chalk from "chalk"
+import { promisify } from "util"
+import cron from "node-cron"
+import fs from "fs/promises"
+import { performance } from "perf_hooks"
 
 // Settings
-const verbose = process.env.VERBOSE === "true"
-const dryrun = process.env.DRYRUN === "true"
+const verbose: Boolean = process.env.VERBOSE === "true"
+const dryrun: Boolean = process.env.DRYRUN === "true"
 
-const SHIP_NAME_MAP = {
+const SHIP_NAME_MAP: any = {
 	2018: "2018 Ship",
 	yname: "Yname (ship)"
 }
 
 class ShipUpdater {
-	async main(bot, logChange, logDiscord) {
+	bot: any
+	logChange!: Function
+	SHIP_INFOBOX_REGEX!: RegExp
+	logDiscord!: Function
+	getArticle!: Function
+	editArticle!: Function
+	getArticleWikitext!: Function
+	getArticleRevisions!: Function
+	currentlyUpdating!: Boolean
+	shipsData: any
+	galaxypediaShipList: any
+	async main(bot: any, logChange: Function, logDiscord: Function) {
 		this.SHIP_INFOBOX_REGEX = /{{\s*Ship[ _]Infobox.*?}}/si
 		this.bot = bot
 		this.logChange = logChange
@@ -29,7 +41,6 @@ class ShipUpdater {
 		this.editArticle = promisify(this.bot.edit.bind(this.bot))
 		this.getArticleWikitext = promisify(wikiTextParser.getArticle.bind(wikiTextParser))
 		this.getArticleRevisions = promisify(this.bot.getArticleRevisions.bind(this.bot))
-		
 		cron.schedule("0 * * * *", () => this.updateGalaxypediaShips())
 		await this.updateGalaxypediaShips()
 	}
@@ -46,7 +57,7 @@ class ShipUpdater {
 			await this.updateShips()
 		} catch (error) {
 			console.error(error)
-			this.logDiscord(`Mass update errored: \`${error}\``)
+			this.logDiscord("Mass update errored (Check console for info)")
 		}
 
 		this.currentlyUpdating = false
@@ -63,10 +74,10 @@ class ShipUpdater {
 		const response = await fetch("https://robloxgalaxy.wiki/api.php?action=query&format=json&list=categorymembers&cmtitle=Category%3AShips&cmlimit=5000")
 		if (!response.ok) throw new Error("Galaxypedia appears to be down.")
 
-		const galaxypediaPageList = (await response.json()).query.categorymembers
-			.map(page => page.title)
-		const shipsList = galaxypediaPageList
-			.filter(pageName => !pageName.startsWith("Category:"))
+		const galaxypediaPageList: String[] = (await response.json()).query.categorymembers
+			.map((page: any) => page.title)
+		const shipsList: String[] = galaxypediaPageList
+			.filter((pageName: any) => !pageName.startsWith("Category:"))
 
 		return shipsList
 	}
@@ -78,7 +89,7 @@ class ShipUpdater {
 		console.log(chalk.greenBright("Ships updated!"))
 	}
 
-	async handleShip (ship) {
+	async handleShip (ship: any) {
 		if (process.env.SHIP && ship.title !== process.env.SHIP) return
 		try {
 			console.log(`${chalk.yellow("Processing ")} ${chalk.cyanBright(ship.title)}...`)
@@ -88,7 +99,7 @@ class ShipUpdater {
 			var latestrevision = (await this.getArticleRevisions(ship.title)).reverse()
 			var revision = null
 			if (latestrevision && latestrevision[0].user && latestrevision[0].revid) {
-				latestrevision = await latestrevision.filter((val) => val.user === process.env.MW_LOGIN)[0]
+				latestrevision = await latestrevision.filter((val: any) => val.user === process.env.MW_LOGIN)[0]
 				if (latestrevision && latestrevision.user && latestrevision.revid) {
 					const timestamp = new Date(latestrevision.timestamp)
 					const rn = new Date()
@@ -102,13 +113,15 @@ class ShipUpdater {
 			console.log(`${chalk.green("Updated")} ${chalk.cyanBright(ship.title)}!` + perf)
 			await this.logChange(ship.title, revision)
 		} catch (error) {
-			console.log(`${chalk.red("[!]")} ${chalk.cyanBright(ship.title)}: ${chalk.red(error.message)}`)
+			if (error instanceof Error) {
+				console.log(`${chalk.red("[!]")} ${chalk.cyanBright(ship.title)}: ${chalk.red(error)}\nStacktrace: ${error.stack}`)
+			}
 		}
 	}
 
-	async updateShip (ship) {
-		const steps = []
-		async function step (name, prom) {
+	async updateShip (ship: any) {
+		const steps: string[] = []
+		async function step (name: string, prom: Promise<any>) {
 			const start = performance.now()
 			const returned = await prom
 			const end = performance.now()
@@ -130,27 +143,33 @@ class ShipUpdater {
 		return steps
 	}
 
-	async getShipPageName (ship) {
+	async getShipPageName (ship: any) {
 		if (this.galaxypediaShipList.includes(ship.title)) return ship.title
-		const mappedName = SHIP_NAME_MAP[ship.title]
+		const mappedName: string = SHIP_NAME_MAP[ship.title]
 		if (mappedName && this.galaxypediaShipList.includes(mappedName)) return mappedName
 		throw new Error(`Can't find page name for ${ship.title}`)
 	}
 
-	async parseWikitext (wikitext) {
+	async parseWikitext (wikitext: any) {
 		const matches = wikitext.match(this.SHIP_INFOBOX_REGEX)
 		if (!matches) throw new Error("Could not find infobox!")
 
 		var data = wikiTextParser.parseTemplate(matches[0]).namedParts
-		if (data.image && data.image.startsWith("<gallery")) data.image = wikitext.match(/<gallery.*?>.*?<\/gallery>/sg)[0]
+		if (data.image && data.image.startsWith("<gallery")) {
+			const boo = wikitext.match(/<gallery.*?>.*?<\/gallery>/sg)
+			if (boo) {
+				data.image = boo[0]
+			}
+		}
+		
 		
 		if (verbose) console.log("Ship Data Raw\n" + JSON.stringify(data, null, "\t"))
 		return data
 	}
 
-	async mergeData (...objects) {
-		const data = {}
-		function mergeObjectIn (obj) {
+	async mergeData (...objects: any[]) {
+		const data: any = {}
+		function mergeObjectIn (obj: any) {
 			for (const key of Object.keys(obj)) {
 				if (obj[key] === "") continue
 				data[key] = obj[key]
@@ -162,7 +181,7 @@ class ShipUpdater {
 		}
 
 		// Sort the json alphabetically
-		const sorted = {}
+		const sorted: any = {}
 		const keys = []
 	
 		for (const key in data) {
@@ -179,7 +198,7 @@ class ShipUpdater {
 		return sorted
 	}
 
-	async formatDataIntoWikitext (data, oldWikitext) {
+	async formatDataIntoWikitext (data: any, oldWikitext: string) {
 		const newWikitext = oldWikitext.replace(this.SHIP_INFOBOX_REGEX, "{{Ship Infobox\n|" + Object.entries(data).map(([key, val]) => `${key} = ${val}`).join("\n|") + "\n}}")
 
 		if (verbose) {
@@ -193,7 +212,16 @@ class ShipUpdater {
 }
 
 class TurretsUpdater {
-	async main (bot, logChange, logDiscord) {
+	TURRET_TABLE_REGEX!: RegExp
+	bot: any
+	logChange!: Function
+	logDiscord!: Function
+	getArticle!: Function
+	editArticle!: Function
+	getArticleWikitext!: Function
+	getArticleRevisions!: Function
+	currentlyUpdating!: boolean
+	async main (bot: any, logChange: Function, logDiscord: Function) {
 		this.TURRET_TABLE_REGEX = /{\|\s*class="wikitable sortable".*?\|}/sig
 		this.bot = bot
 		this.logChange = logChange
@@ -232,7 +260,7 @@ class TurretsUpdater {
 		return galaxyInfoTurrets.serializedTurrets
 	}
 
-	async updateTurrets(turretData) {
+	async updateTurrets(turretData: any) {
 		const turretPageWikitext = await this.getArticleWikitext("Turrets")
 		var cum = turretPageWikitext
 
@@ -243,7 +271,7 @@ class TurretsUpdater {
 			if (verbose) console.log(index)
 			const tablesplit = table.split("|-")
 	
-			const relevantturrets = Object.entries(turretData).filter(([, data]) => {
+			const relevantturrets = Object.entries(turretData).filter(([, data]: any) => {
 				if (index === 0) return data.TurretType === "Mining"
 				else if (index === 1) return data.TurretType === "Laser"
 				else if (index === 2) return data.TurretType === "Railgun"
@@ -251,7 +279,7 @@ class TurretsUpdater {
 				else if (index === 4) return data.TurretType === "Cannon"
 				else if (index === 5) return data.TurretType === "PDL"
 			})
-			const turretsparsed = relevantturrets.map(([, turret]) => {
+			const turretsparsed = relevantturrets.map(([, turret]: any) => {
 				return `\n| ${turret.Name}\n| ${turret.Size}\n| ${turret.BaseAccuracy.toFixed(4)}\n| ${turret.Damage.toFixed()}\n| ${turret.Range.toFixed()}\n| ${turret.Reload.toFixed(2)}\n| ${turret.SpeedDenominator.toFixed()}\n| ${turret.DPS.toFixed(2)}`
 			})
 			if (verbose) console.table(turretsparsed)
@@ -272,24 +300,24 @@ class TurretsUpdater {
 	console.log("Written by smallketchup82 & yname\n---------------------------------")
 	
 	if (dryrun) {
-		console.log(`${chalk.red("[!]")} Dry run is enabled! Halting for 5 seconds, terminate program if unintentional.`)
-		await new Promise(resolve => setTimeout(resolve, 5000))
+		console.log(`${chalk.red("[!]")} Dry run is enabled! Halting for 3 seconds, terminate program if unintentional.`)
+		await new Promise(resolve => setTimeout(resolve, 3000))
 	}
 
-	const bot = new NodeMW({
+	const bot: any = new NodeMW({
 		protocol: "https",
 		server: "robloxgalaxy.wiki",
 		path: "/",
 		debug: verbose
-	})
+	});
 
-	this.logIn = promisify(bot.logIn.bind(bot))
+	const logIn = promisify(bot.logIn.bind(bot))
 
-	await this.logIn(process.env.MW_LOGIN, process.env.MW_PASS)
+	logIn(process.env.MW_LOGIN, process.env.MW_PASS)
 
-	async function logChange (name, revision) {
+	async function logChange (name: string, revision: { revid: string | number }) {
 		if (dryrun) return
-		await fetch(process.env.WEBHOOK, {
+		await fetch(process.env.WEBHOOK!, {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json"
@@ -300,9 +328,9 @@ class TurretsUpdater {
 		})
 	}
 
-	async function logDiscord (content) {
+	async function logDiscord (content: any) {
 		if (dryrun) return
-		await fetch(process.env.WEBHOOK, {
+		await fetch(process.env.WEBHOOK!, {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json"

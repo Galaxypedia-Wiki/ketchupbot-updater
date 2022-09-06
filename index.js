@@ -46,7 +46,7 @@ class ShipUpdater {
 			await this.updateShips()
 		} catch (error) {
 			console.error(error)
-			this.logDiscord(`Mass update errored: \`${error}\``)
+			this.logDiscord("Mass update errored (Check console for more info)")
 		}
 
 		this.currentlyUpdating = false

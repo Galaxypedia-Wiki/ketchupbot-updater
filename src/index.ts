@@ -114,7 +114,10 @@ class ShipUpdater {
 			await this.logChange(ship.title, revision)
 		} catch (error) {
 			if (error instanceof Error) {
-				console.log(`${chalk.red("[!]")} ${chalk.cyanBright(ship.title)}: ${chalk.red(error)}\nStacktrace: ${error.stack}`)
+				console.log(`${chalk.red("[!]")} ${chalk.cyanBright(ship.title)}: ${chalk.red(error)}`)
+				if (verbose) {
+					console.log(error.stack)
+				}
 			}
 		}
 	}

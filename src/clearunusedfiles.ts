@@ -79,7 +79,7 @@ async function initialize() {
 
     rl.question("Are you sure you want to delete all unused files? (y/N) ", async (answer: string) => {
         if (answer.toLowerCase() !== "y") {
-            console.log("Aborting...")
+            console.log(chalk.red("[-]") + "Aborting...")
             process.exit(0)
         }
         await main(bot)

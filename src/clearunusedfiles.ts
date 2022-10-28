@@ -23,20 +23,24 @@ async function getUnusedFiles() {
     }
 
     const json = await res.json()
-    const pages = Object.values(json.query.pages).map((page: any) => page.title)
+    if (!json.query.pages) {
+        console.log(chalk.green("[+]") + " No unused files found!")
+        process.exit(0)
+    }
+    const pages: string[] = Object.values(json.query.pages).map((page: any) => page.title)
 
     return pages
 }
 
 async function deleteFile(file: string, bot: any) {
-    console.log(`${chalk.green("[-]")} Deleting ${file}...`)
+    console.log(`${chalk.green("[+]")} Deleting ${file}...`)
 
     const deleteAFile = promisify(bot.delete.bind(bot))
 
     if (!dryrun) {
         await deleteAFile(file, "Unused file")
     } else {
-        console.log(`${chalk.red("[!]")} Dry run is enabled! Skipping deletion for ${file}`)
+        console.log(`${chalk.red("[-]")} Dry run is enabled! Skipping deletion for ${file}`)
     }
 }
 
@@ -60,7 +64,7 @@ async function initialize() {
     console.log((await fs.readFile("banner.txt")).toString())
     console.log("Written by smallketchup82 & yname\n---------------------------------")
 
-    if (dryrun) console.log(`${chalk.red("[!]")} Dry run is enabled!`)
+    if (dryrun) console.log(`${chalk.red("[-]")} Dry run is enabled!`)
 
     const bot: any = new NodeMW({
         protocol: "https",

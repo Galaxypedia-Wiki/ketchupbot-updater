@@ -183,7 +183,7 @@ class ShipUpdater {
 
 		// Sort the json alphabetically
 		const sorted: any = {}
-		const keys = []
+		const keys: any[] = []
 	
 		for (const key in data) {
 			keys.push(key)

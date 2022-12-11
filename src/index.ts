@@ -10,6 +10,7 @@ import { promisify } from "util"
 import cron from "node-cron"
 import fs from "fs/promises"
 import { performance } from "perf_hooks"
+import express from "express"
 
 // Settings
 const verbose: Boolean = process.env.VERBOSE === "true"
@@ -19,6 +20,8 @@ const SHIP_NAME_MAP: any = {
 	2018: "2018 Ship",
 	yname: "Yname (ship)"
 }
+
+const app = express()
 
 class ShipUpdater {
 	bot: any
@@ -32,7 +35,7 @@ class ShipUpdater {
 	currentlyUpdating!: Boolean
 	shipsData: any
 	galaxypediaShipList: any
-	async main(bot: any, logChange: Function, logDiscord: Function) {
+	async main(bot: any, logChange: Function, logDiscord: Function, manual: Boolean = false) {
 		this.SHIP_INFOBOX_REGEX = /{{\s*Ship[ _]Infobox.*?}}/si
 		this.bot = bot
 		this.logChange = logChange
@@ -41,7 +44,8 @@ class ShipUpdater {
 		this.editArticle = promisify(this.bot.edit.bind(this.bot))
 		this.getArticleWikitext = promisify(wikiTextParser.getArticle.bind(wikiTextParser))
 		this.getArticleRevisions = promisify(this.bot.getArticleRevisions.bind(this.bot))
-		cron.schedule("0 * * * *", () => this.updateGalaxypediaShips())
+
+		if (!manual) cron.schedule("0 * * * *", () => this.updateGalaxypediaShips())
 		await this.updateGalaxypediaShips()
 	}
 
@@ -222,7 +226,7 @@ class TurretsUpdater {
 	getArticleWikitext!: Function
 	getArticleRevisions!: Function
 	currentlyUpdating!: boolean
-	async main (bot: any, logChange: Function, logDiscord: Function) {
+	async main (bot: any, logChange: Function, logDiscord: Function, manual: boolean = false) {
 		this.TURRET_TABLE_REGEX = /{\|\s*class="wikitable sortable".*?\|}/sig
 		this.bot = bot
 		this.logChange = logChange
@@ -232,7 +236,7 @@ class TurretsUpdater {
 		this.getArticleWikitext = promisify(wikiTextParser.getArticle.bind(wikiTextParser))
 		this.getArticleRevisions = promisify(this.bot.getArticleRevisions.bind(this.bot))
 		
-		cron.schedule("30 * * * *", () => this.updateGalaxypediaTurrets())
+		if (!manual) cron.schedule("30 * * * *", () => this.updateGalaxypediaTurrets())
 		await this.updateGalaxypediaTurrets()
 	}
 

@@ -20,11 +20,11 @@ const SHIP_NAME_MAP: any = {
 	yname: "Yname (ship)"
 }
 
-class ShipUpdater {
+export class ShipUpdater {
 	bot: any
-	logChange!: Function
+	logChange!: Function | false
+	logDiscord!: Function | false
 	SHIP_INFOBOX_REGEX!: RegExp
-	logDiscord!: Function
 	getArticle!: Function
 	editArticle!: Function
 	getArticleWikitext!: Function
@@ -32,8 +32,16 @@ class ShipUpdater {
 	currentlyUpdating!: Boolean
 	shipsData: any
 	galaxypediaShipList: any
-	async main(bot: any, logChange: Function, logDiscord: Function, manual: Boolean = false) {
-		this.SHIP_INFOBOX_REGEX = /{{\s*Ship[ _]Infobox.*?}}/si
+
+	/*
+	 * Main function
+	 * @param {Object} bot - A NodeMW instance
+	 * @param {Function} logChange - A function that logs the change to a Discord Webhook
+	 * @param {Function} logDiscord - A function that sends a message to a Discord Webhook
+	 * @param {Boolean} manual - Whether or not the update is being run manually, disables cron scheduling
+	 */
+	async main(bot: any, logChange: Function | false, logDiscord: Function | false, manual: Boolean = false) {
+		this.SHIP_INFOBOX_REGEX = /{{\s*Ship[ _]Infobox.*?}}/si // Regex for the ship infobox
 		this.bot = bot
 		this.logChange = logChange
 		this.logDiscord = logDiscord
@@ -46,6 +54,7 @@ class ShipUpdater {
 		await this.updateGalaxypediaShips()
 	}
 
+	// Boilerplate
 	async updateGalaxypediaShips () {
 		try {
 			if (this.currentlyUpdating) {
@@ -58,12 +67,13 @@ class ShipUpdater {
 			await this.updateShips()
 		} catch (error: any) {
 			console.error(chalk.redBright("------------ MASS SHIP UPDATE ERROR ------------\n") + error.stack)
-			this.logDiscord("Mass update errored (Check console for info)")
+			if (this.logDiscord) this.logDiscord("Mass update errored (Check console for info)")
 		}
 
 		this.currentlyUpdating = false
 	}
 
+	// Get the ship data from the Galaxy Info API
 	async getShipsData () {
 		const response = await fetch(`https://galaxy.wingysam.xyz/api/v2/galaxypedia?token=${process.env.GALAXY_INFO_TOKEN}`)
 		if (!response.ok) throw new Error("Galaxy Info seems to be down")
@@ -71,6 +81,7 @@ class ShipUpdater {
 		return galaxyInfoShips
 	}
 
+	// Get the ship list from the Galaxypedia API
 	async getGalaxypediaShipList () {
 		const response = await fetch("https://robloxgalaxy.wiki/api.php?action=query&format=json&list=categorymembers&cmtitle=Category%3AShips&cmlimit=5000")
 		if (!response.ok) throw new Error("Galaxypedia appears to be down.")
@@ -83,6 +94,7 @@ class ShipUpdater {
 		return shipsList
 	}
 
+	// Update all of the ships 1 by 1
 	async updateShips () {
 		for (const shipName of Object.keys(this.shipsData).sort()) {
 			await this.handleShip(this.shipsData[shipName])
@@ -90,10 +102,12 @@ class ShipUpdater {
 		console.log(chalk.greenBright("Ships updated!"))
 	}
 
+	// Single Ship Updater Boilerplate
 	async handleShip (ship: any) {
 		if (process.env.SHIP && ship.title !== process.env.SHIP) return
 		try {
 			console.log(`${chalk.yellow("Processing ")} ${chalk.cyanBright(ship.title)}...`)
+
 			const steps = await this.updateShip(ship)
 
 			// Grab the most recent edit made by the bot & send the revid to the discord webhook logger
@@ -112,7 +126,7 @@ class ShipUpdater {
 
 			const perf = verbose ? ` perf: ${steps.join(", ")}` : ""
 			console.log(`${chalk.green("Updated")} ${chalk.cyanBright(ship.title)}!` + perf)
-			await this.logChange(ship.title, revision)
+			if (this.logChange) await this.logChange(ship.title, revision)
 		} catch (error: any) {
 				console.log(`${chalk.red("[!]")} ${chalk.cyanBright(ship.title)}: ${chalk.red(error.message)}`)
 				if (verbose) {
@@ -121,6 +135,7 @@ class ShipUpdater {
 		}
 	}
 
+	// Single Ship Updater
 	async updateShip (ship: any) {
 		const steps: string[] = []
 		async function step (name: string, prom: Promise<any>) {
@@ -145,6 +160,7 @@ class ShipUpdater {
 		return steps
 	}
 
+	// Get the page name for the ship
 	async getShipPageName (ship: any) {
 		if (this.galaxypediaShipList.includes(ship.title)) return ship.title
 		const mappedName: string = SHIP_NAME_MAP[ship.title]
@@ -152,6 +168,7 @@ class ShipUpdater {
 		throw new Error(`Can't find page name for ${ship.title}`)
 	}
 
+	// Get the wikitext for the ship
 	async parseWikitext (wikitext: any) {
 		const matches = wikitext.match(this.SHIP_INFOBOX_REGEX)
 		if (!matches) throw new Error("Could not find infobox!")
@@ -164,11 +181,11 @@ class ShipUpdater {
 			}
 		}
 		
-		
 		if (verbose) console.log("Ship Data Raw\n" + JSON.stringify(data, null, "\t"))
 		return data
 	}
 
+	// Merge the data from the API with the data from the infobox
 	async mergeData (...objects: any[]) {
 		const data: any = {}
 		function mergeObjectIn (obj: any) {
@@ -200,6 +217,7 @@ class ShipUpdater {
 		return sorted
 	}
 
+	// Format the data into wikitext
 	async formatDataIntoWikitext (data: any, oldWikitext: string) {
 		const newWikitext = oldWikitext.replace(this.SHIP_INFOBOX_REGEX, "{{Ship Infobox\n|" + Object.entries(data).map(([key, val]) => `${key} = ${val}`).join("\n|") + "\n}}")
 
@@ -213,7 +231,7 @@ class ShipUpdater {
 	}
 }
 
-class TurretsUpdater {
+export class TurretsUpdater {
 	TURRET_TABLE_REGEX!: RegExp
 	bot: any
 	logChange!: Function
@@ -223,6 +241,14 @@ class TurretsUpdater {
 	getArticleWikitext!: Function
 	getArticleRevisions!: Function
 	currentlyUpdating!: boolean
+
+	/*
+	 * Main function
+	 * @params {Object} bot - A NodeMW instance
+	 * @params {Function} logChange - A function to log a turret update message to a Discord Webhook
+	 * @params {Function} logDiscord - A function to log a message to a Discord Webhook
+	 * @params {Boolean} manual - Whether the function is being called manually or not, disables cron scheduling, defaults to false
+	*/
 	async main (bot: any, logChange: Function, logDiscord: Function, manual: boolean = false) {
 		this.TURRET_TABLE_REGEX = /{\|\s*class="wikitable sortable".*?\|}/sig
 		this.bot = bot
@@ -237,6 +263,7 @@ class TurretsUpdater {
 		await this.updateGalaxypediaTurrets()
 	}
 
+	// Boilerplate
 	async updateGalaxypediaTurrets() {
 		try {
 			if (this.currentlyUpdating) {
@@ -255,6 +282,7 @@ class TurretsUpdater {
 		this.currentlyUpdating = false
 	}
 
+	// Get turret data from the Galaxy Info API
 	async getTurretsData() {
 		const response = await fetch("https://galaxy.wingysam.xyz/api/v2/ships-turrets/raw")
 		if (!response.ok) throw new Error("Galaxy Info seems to be down - Turrets")
@@ -262,6 +290,7 @@ class TurretsUpdater {
 		return galaxyInfoTurrets.serializedTurrets
 	}
 
+	// Update the turrets page
 	async updateTurrets(turretData: any) {
 		const turretPageWikitext = await this.getArticleWikitext("Turrets")
 		var cum = turretPageWikitext
@@ -297,7 +326,7 @@ class TurretsUpdater {
 	}
 }
 
-(async () => {
+async function main() {
 	console.log((await fs.readFile("banner.txt")).toString())
 	console.log("Written by smallketchup82 & yname\n---------------------------------")
 	
@@ -314,7 +343,6 @@ class TurretsUpdater {
 	});
 
 	const logIn = promisify(bot.logIn.bind(bot))
-
 	logIn(process.env.MW_LOGIN, process.env.MW_PASS)
 
 	async function logChange (name: string, revision: { revid: string | number }) {
@@ -352,4 +380,6 @@ class TurretsUpdater {
 		const turretupdater = new TurretsUpdater()
 		await turretupdater.main(bot, logChange, logDiscord)
 	}
-})()
+}
+
+main()

@@ -10,7 +10,6 @@ import { promisify } from "util"
 import cron from "node-cron"
 import fs from "fs/promises"
 import { performance } from "perf_hooks"
-import express from "express"
 
 // Settings
 const verbose: Boolean = process.env.VERBOSE === "true"
@@ -20,8 +19,6 @@ const SHIP_NAME_MAP: any = {
 	2018: "2018 Ship",
 	yname: "Yname (ship)"
 }
-
-const app = express()
 
 class ShipUpdater {
 	bot: any

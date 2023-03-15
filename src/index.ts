@@ -182,7 +182,7 @@ class ShipUpdater {
 		const resolveSuspicion = async (shipname: string) => {
 			const page = await this.getArticle(shipname)
 			if (page) {
-				this.logDiscord(`Ship ${shipname} is not in the Ships category, but is in the Main namespace. Please check if it should be in the Ships category.`)
+				this.logDiscord(`**${shipname}** is not in the Ships category, but is in the Main namespace. Please check if it should be in the Ships category.`)
 				console.log(chalk.yellowBright('[?]'), chalk.cyanBright(shipname) + ": " + chalk.yellowBright(`${shipname} is not in the Ships category, but is in the Main namespace. Please check if it should be in the Ships category.`))
 			}
 		}

@@ -15,10 +15,16 @@ import { performance } from "perf_hooks"
 const verbose: Boolean = process.env.VERBOSE === "true"
 const dryrun: Boolean = process.env.DRYRUN === "true"
 
+// Manually map the ship name obtained from the API to the name of the page on the wiki
 const SHIP_NAME_MAP: any = {
 	2018: "2018 Ship",
 	yname: "Yname (ship)"
 }
+
+// Exempt certain parameters from the final result.
+const parameters_to_exempt: string[] = [
+	"damage_res"
+]
 
 class ShipUpdater {
 	bot: any
@@ -33,7 +39,7 @@ class ShipUpdater {
 	shipsData: any
 	galaxypediaShipList: any
 	async main(bot: any, logChange: Function, logDiscord: Function) {
-		this.SHIP_INFOBOX_REGEX = /{{\s*Ship[ _]Infobox.*?}}/si
+		this.SHIP_INFOBOX_REGEX = /{{\s*Ship[ _]Infobox(?:[^{}]|{{[^{}]*}}|{{{[^{}]*}}})+(?:(?!{{(?:[^{}]|{{[^{}]*}}|{{{[^{}]*}}})*)}})/si
 		this.bot = bot
 		this.logChange = logChange
 		this.logDiscord = logDiscord
@@ -90,21 +96,31 @@ class ShipUpdater {
 	}
 
 	async handleShip (ship: any) {
-		if (process.env.SHIP && ship.title !== process.env.SHIP) return
+		if (process.env.SHIP && process.env.SHIP !== "" && ship.title !== process.env.SHIP) return
 		try {
 			console.log(`${chalk.yellow("Processing ")} ${chalk.cyanBright(ship.title)}...`)
 			const steps = await this.updateShip(ship)
 
 			// Grab the most recent edit made by the bot & send the revid to the discord webhook logger
-			var latestrevision = (await this.getArticleRevisions(ship.title)).reverse()
+			// Grab the name of the page, including handling mapping. But don't throw an error if the page isnt found. Instead just return undefined
+			var pagename = await this.getShipPageName(ship, false)
+			var latestrevision = undefined;
+			// If the page exists, get the latest revision. If not, just return latestrevision as undefined
+			if (pagename) {
+				latestrevision = (await this.getArticleRevisions(pagename)).reverse()
+			}
 			var revision = null
-			if (latestrevision && latestrevision[0].user && latestrevision[0].revid) {
-				latestrevision = await latestrevision.filter((val: any) => val.user === process.env.MW_LOGIN)[0]
-				if (latestrevision && latestrevision.user && latestrevision.revid) {
-					const timestamp = new Date(latestrevision.timestamp)
-					const rn = new Date()
-					if (timestamp.getDate() === rn.getDate() && timestamp.getMonth() === rn.getMonth() && timestamp.getFullYear() === rn.getFullYear()) {
-						revision = latestrevision
+
+			// If the latest revision exists, filter it to only include the bot's edits. If it doesn't exist, just return revision as null
+			if (latestrevision) {
+				if (latestrevision[0].user && latestrevision[0].revid) {
+					latestrevision = await latestrevision.filter((val: any) => val.user === process.env.MW_LOGIN)[0]
+					if (latestrevision && latestrevision.user && latestrevision.revid) {
+						const timestamp = new Date(latestrevision.timestamp)
+						const rn = new Date()
+						if (timestamp.getDate() === rn.getDate() && timestamp.getMonth() === rn.getMonth() && timestamp.getFullYear() === rn.getFullYear()) {
+							revision = latestrevision
+						}
 					}
 				}
 			}
@@ -121,6 +137,7 @@ class ShipUpdater {
 	}
 
 	async updateShip (ship: any) {
+		// Setup performance logging
 		const steps: string[] = []
 		async function step (name: string, prom: Promise<any>) {
 			const start = performance.now()
@@ -130,25 +147,58 @@ class ShipUpdater {
 			return returned
 		}
 
+		// Get the page name of the ship we wish to update
 		const pageName = await step("getShipPageName", this.getShipPageName(ship))
+		
+		// Get the wikitext of the ship page after we have found what the page name is. If we can't find the page, we can't update it, so we throw an error.
 		const oldWikitext = await step("getArticle", this.getArticle(pageName))
 		if (!oldWikitext) throw new Error(`Wikitext for ${pageName} missing`)
 
+		// Parse the wikitext into a data object (which is basically just the infobox with its data in a more readable way), merge the data object with the new data (the new data being data gathed from the API and parsed into the same format as the old data), and then format the data back into wikitext.
 		const oldData = await step("parseWikiText", this.parseWikitext(oldWikitext))
 		const newData = await step("mergeData", this.mergeData(oldData, ship))
 
+		// Using the new data, format it into wikitext and compare it to the old wikitext. If they're the same, we don't need to update the page, so we throw an error saying they're up to date.
+		// The end result should be a new wikitext that is different from the old wikitext with updated data.
 		const newWikitext = await step("formatDataIntoWikitext", this.formatDataIntoWikitext(newData, oldWikitext))
 		if (newWikitext === oldWikitext) throw new Error("Already up-to-date")
 
+		// If we're not in dryrun mode, we edit the page with the new wikitext and a brief summary.
 		if (!dryrun) await step("editArticle", this.editArticle(pageName, newWikitext, "Automatic Infobox Update", false))
+
+		// We return the time it took to complete each step so we can log it later if we're interested in performance monitoring.
 		return steps
 	}
 
-	async getShipPageName (ship: any) {
+	async getShipPageName (ship: any, error?: boolean) {
+		// Check if the ship is in the ship list. If it is, return the ship name.
 		if (this.galaxypediaShipList.includes(ship.title)) return ship.title
+		
+		// If the ship isn't in the ship list, check if it's in the ship name map. If it is, return the mapped name.
 		const mappedName: string = SHIP_NAME_MAP[ship.title]
 		if (mappedName && this.galaxypediaShipList.includes(mappedName)) return mappedName
-		throw new Error(`Can't find page name for ${ship.title}`)
+
+		// If the page doesn't exist in the ship list at all, but exists after searching the entire site, this could mean that it simply isn't in the Ships category. So we check if it's in the Main category, and if it is, we send a notification to the webhook to look into it.
+		const resolveSuspicion = async (shipname: string) => {
+			const page = await this.getArticle(shipname)
+			if (page) {
+				this.logDiscord(`Ship ${shipname} is not in the Ships category, but is in the Main namespace. Please check if it should be in the Ships category.`)
+				console.log(chalk.yellowBright('[?]'), chalk.cyanBright(shipname) + ": " + chalk.yellowBright(`${shipname} is not in the Ships category, but is in the Main namespace. Please check if it should be in the Ships category.`))
+			}
+		}
+
+		// If error is false, we don't want to throw an error, we just want to return undefined. This is used when we're checking if a page exists, and we don't want to throw an error if it doesn't.
+		if (error === false) {
+			return undefined
+		} else { 
+			if (mappedName) {
+				resolveSuspicion(mappedName)
+			} else {
+				resolveSuspicion(ship.title)
+			}
+			throw new Error(`Can't find the page name for ${ship.title}`)
+		}
+		
 	}
 
 	async parseWikitext (wikitext: any) {
@@ -169,19 +219,39 @@ class ShipUpdater {
 	}
 
 	async mergeData (...objects: any[]) {
+		/* This function can be pretty confusing, so I'm going to give some clarification on what exactly it does.
+		First we initialize the data variable. This is what's going to hold our data.
+		So you can see we make a function called mergeObjectIn. For now, just ignore it. It will make sense in a second.
+		When this function is called, we give it two inputs (look up, you can see it being run with the arguments of (oldData,ship)). The first one is the old data, the next one is the new data that we obtain from the API.
+		You can see where we do the for loop where we basically iterate over the objects that we gather in the arguments of this function. Given that we've supplied the correct inputs. We should only be working with two objects.
+		The first pass will basically take the old data and input it into the data array. By doing this, we will have all of the old data that the API doesn't supply for us. For example like the creator of a ship, something that editors will have manually added to the page.
+		By now, the data array will basically have all of the old data that is currently present on the page.
+		Now what we do in the second pass is we take the data from the API. And we basically go ahead and add new data from the API or overwrite old data with the new data from the API, this is done using the line data[key] = obj[key].
+		So let's say that the API supplies us with the shield parameter, but the old data that's currently on the page doesn't have that. This way we will be adding that parameter to the data array. But let's say that the original page did have that parameter. What we will be doing is overwriting the old data with the data that we obtained with the API.
+		So yeah, that's basically an explanation of this function, because it's really confusing to understand what's going on here.*/
+		
 		const data: any = {}
 		function mergeObjectIn (obj: any) {
 			for (const key of Object.keys(obj)) {
+				// If the value of the parameter is an empty string, we don't want to include it in the final result
 				if (obj[key] === "") continue
+
 				data[key] = obj[key]
 			}
 		}
 
+		// If a parameter is in the list of parameters to exempt but is supplied by the API, remove the parameter from the API data.
+		// The reason for this is because exempting the parameters shouldnt result in KetchupBot outright deleting the parameter from the page. It should just not add it to the page if it doesn't already exist.
+		for (const parameter of parameters_to_exempt) {
+			if (parameter in objects[1]) delete objects[1][parameter]
+		}
+
+		// First pass, we merge in the old data to the data array. Second pass, we merge in the new data to the data array. We are left with a json object that has all of the old data, but with the new data overwriting any parameters that need to be updated.
 		for (const obj of objects) {
 			mergeObjectIn(obj)
 		}
 
-		// Sort the json alphabetically
+		// Sort the data alphabetically, idk how it works but it works lol
 		const sorted: any = {}
 		const keys: any[] = []
 	
@@ -316,7 +386,7 @@ class TurretsUpdater {
 
 	logIn(process.env.MW_LOGIN, process.env.MW_PASS)
 
-	async function logChange (name: string, revision: { revid: string | number }) {
+	async function logChange (name: string, revision: { revid: string | number } | null) {
 		if (dryrun) return
 		await fetch(process.env.WEBHOOK!, {
 			method: "POST",

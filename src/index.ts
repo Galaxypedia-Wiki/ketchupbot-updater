@@ -14,6 +14,10 @@ import { performance } from "perf_hooks"
 // Settings
 const verbose: Boolean = process.env.VERBOSE === "true"
 const dryrun: Boolean = process.env.DRYRUN === "true"
+if (process.env.SHIP && process.env.SHIP !== "") {
+	console.log(chalk.yellowBright(`[!] Ship specified: ${process.env.SHIP}`))
+	process.env.SHIPSONLY = "true"
+}
 
 // Manually map the ship name obtained from the API to the name of the page on the wiki
 const SHIP_NAME_MAP: any = {
@@ -164,7 +168,13 @@ class ShipUpdater {
 		if (newWikitext === oldWikitext) throw new Error("Already up-to-date")
 
 		// If we're not in dryrun mode, we edit the page with the new wikitext and a brief summary.
-		if (!dryrun) await step("editArticle", this.editArticle(pageName, newWikitext, "Automatic Infobox Update", false))
+		if (!dryrun) {
+			try {
+			await step("editArticle", this.editArticle(pageName, newWikitext, "Automatic Infobox Update", false))
+			} catch (err: any) {
+				throw new Error("hi edit failed lol " + err.message)
+			}
+		}
 
 		// We return the time it took to complete each step so we can log it later if we're interested in performance monitoring.
 		return steps
@@ -180,10 +190,14 @@ class ShipUpdater {
 
 		// If the page doesn't exist in the ship list at all, but exists after searching the entire site, this could mean that it simply isn't in the Ships category. So we check if it's in the Main category, and if it is, we send a notification to the webhook to look into it.
 		const resolveSuspicion = async (shipname: string) => {
-			const page = await this.getArticle(shipname)
-			if (page) {
-				this.logDiscord(`**${shipname}** is not in the Ships category, but is in the Main namespace. Please check if it should be in the Ships category.`)
-				console.log(chalk.yellowBright('[?]'), chalk.cyanBright(shipname) + ": " + chalk.yellowBright(`${shipname} is not in the Ships category, but is in the Main namespace. Please check if it should be in the Ships category.`))
+			try {
+				const page = await this.getArticle(shipname)
+				if (page) {
+					this.logDiscord(`**${shipname}** is not in the Ships category, but is in the Main namespace. Please check if it should be in the Ships category.`)
+					console.log(chalk.yellowBright('[?]'), chalk.cyanBright(shipname) + ": " + chalk.yellowBright(`${shipname} is not in the Ships category, but is in the Main namespace. Please check if it should be in the Ships category.`))
+				}
+			} catch (err: any) {
+				throw new Error(chalk.redBright('[!] ') + chalk.cyanBright(shipname) + ": " + chalk.redBright(`Error while resolving suspicion: ${err.message}`))
 			}
 		}
 
@@ -384,7 +398,12 @@ class TurretsUpdater {
 
 	const logIn = promisify(bot.logIn.bind(bot))
 
-	logIn(process.env.MW_LOGIN, process.env.MW_PASS)
+	try {
+		await logIn(process.env.MW_LOGIN, process.env.MW_PASS)
+	} catch (error: any) {
+		console.error(chalk.red("------------ LOGIN ERROR ------------\n") + error.stack)
+		throw new Error("Login failed")
+	}
 
 	async function logChange (name: string, revision: { revid: string | number } | null) {
 		if (dryrun) return

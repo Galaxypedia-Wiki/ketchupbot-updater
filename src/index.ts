@@ -84,9 +84,9 @@ class ShipUpdater {
 		const response = await fetch("https://robloxgalaxy.wiki/api.php?action=query&format=json&list=categorymembers&cmtitle=Category%3AShips&cmlimit=5000")
 		if (!response.ok) throw new Error("Galaxypedia appears to be down.")
 
-		const galaxypediaPageList: String[] = (await response.json()).query.categorymembers
+		const galaxypediaPageList: string[] = (await response.json()).query.categorymembers
 			.map((page: any) => page.title)
-		const shipsList: String[] = galaxypediaPageList
+		const shipsList = galaxypediaPageList
 			.filter((pageName: any) => !pageName.startsWith("Category:"))
 
 		return shipsList
@@ -176,7 +176,7 @@ class ShipUpdater {
 			}
 		}
 
-		// We return the time it took to complete each step so we can log it later if we're interested in performance monitoring.
+		// We return the time it took to complete each step, so we can log it later if we're interested in performance monitoring.
 		return steps
 	}
 
@@ -238,8 +238,8 @@ class ShipUpdater {
 		So you can see we make a function called mergeObjectIn. For now, just ignore it. It will make sense in a second.
 		When this function is called, we give it two inputs (look up, you can see it being run with the arguments of (oldData,ship)). The first one is the old data, the next one is the new data that we obtain from the API.
 		You can see where we do the for loop where we basically iterate over the objects that we gather in the arguments of this function. Given that we've supplied the correct inputs. We should only be working with two objects.
-		The first pass will basically take the old data and input it into the data array. By doing this, we will have all of the old data that the API doesn't supply for us. For example like the creator of a ship, something that editors will have manually added to the page.
-		By now, the data array will basically have all of the old data that is currently present on the page.
+		The first pass will basically take the old data and input it into the data array. By doing this, we will have all the old data that the API doesn't supply for us. For example like the creator of a ship, something that editors will have manually added to the page.
+		By now, the data array will basically have all the old data that is currently present on the page.
 		Now what we do in the second pass is we take the data from the API. And we basically go ahead and add new data from the API or overwrite old data with the new data from the API, this is done using the line data[key] = obj[key].
 		So let's say that the API supplies us with the shield parameter, but the old data that's currently on the page doesn't have that. This way we will be adding that parameter to the data array. But let's say that the original page did have that parameter. What we will be doing is overwriting the old data with the data that we obtained with the API.
 		So yeah, that's basically an explanation of this function, because it's really confusing to understand what's going on here.*/
@@ -258,6 +258,7 @@ class ShipUpdater {
 		// The reason for this is because exempting the parameters shouldnt result in KetchupBot outright deleting the parameter from the page. It should just not add it to the page if it doesn't already exist.
 		for (const parameter of parameters_to_exempt) {
 			if (parameter in objects[1]) delete objects[1][parameter]
+			console.log("Not adding parameter " + parameter + " to the page because it is in the list of parameters to exempt.")
 		}
 
 		// First pass, we merge in the old data to the data array. Second pass, we merge in the new data to the data array. We are left with a json object that has all of the old data, but with the new data overwriting any parameters that need to be updated.

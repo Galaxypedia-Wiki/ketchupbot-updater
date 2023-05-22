@@ -35,8 +35,10 @@ const parameters_to_exempt: string[] = [
 	"damage_res"
 ]
 
-class ShipUpdater {
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let updatedShips: string[] = []
+let skippedShips: string[] = []
+
+export class ShipUpdater {
 	bot!: NodeMW
 	logChange!: (name: string, revision: { revid: string | number } | null) => Promise<void>
 	SHIP_INFOBOX_REGEX!: RegExp
@@ -49,7 +51,7 @@ class ShipUpdater {
 	shipsData: any
 	galaxypediaShipList: any
 	runcount!: number
-	async main(bot: NodeMW, logChange: (name: string, revision: { revid: string | number } | null) => Promise<void>, logDiscord: (content: string) => Promise<void>) {
+	async main(bot: NodeMW, logChange: (name: string, revision: { revid: string | number } | null) => Promise<void>, logDiscord: (content: string) => Promise<void>, singlepass = false) {
 		this.SHIP_INFOBOX_REGEX = /{{\s*Ship[ _]Infobox(?:[^{}]|{{[^{}]*}}|{{{[^{}]*}}})+(?:(?!{{(?:[^{}]|{{[^{}]*}}|{{{[^{}]*}}})*)}})/si
 		this.bot = bot
 		this.logChange = logChange
@@ -59,10 +61,14 @@ class ShipUpdater {
 		this.getArticleWikitext = promisify(wikiTextParser.getArticle.bind(wikiTextParser))
 		this.getArticleRevisions = promisify(this.bot.getArticleRevisions.bind(this.bot))
 		this.runcount = 0
-		cron.schedule("0 * * * *", async () => {
+
+		if (!singlepass) {
+			const scheduler = cron.schedule("0 * * * *", async () => {
+				await this.updateGalaxypediaShips()
+			})
 			await this.updateGalaxypediaShips()
-		})
-		await this.updateGalaxypediaShips()
+			return scheduler
+		}
 	}
 
 	async updateGalaxypediaShips () {
@@ -85,6 +91,14 @@ class ShipUpdater {
 
 		this.currentlyUpdating = false
 		this.runcount += 1
+		const shipssuccessfullyupdated = updatedShips
+		const shipsskipped = skippedShips
+		updatedShips = []
+		skippedShips = []
+		return { 
+			"updatedShips": shipssuccessfullyupdated,
+			"skippedShips": shipsskipped
+		}
 	}
 
 	async getShipsData () {
@@ -180,12 +194,16 @@ class ShipUpdater {
 		// Using the new data, format it into wikitext and compare it to the old wikitext. If they're the same, we don't need to update the page, so we throw an error saying they're up to date.
 		// The end result should be a new wikitext that is different from the old wikitext with updated data.
 		const newWikitext = await step("formatDataIntoWikitext", this.formatDataIntoWikitext(newData, oldWikitext))
-		if (newWikitext === oldWikitext) throw new Error("Already up-to-date")
+		if (newWikitext === oldWikitext) {
+			skippedShips.push(ship.title)
+			throw new Error("Already up-to-date")
+		}
 
 		// If we're not in dryrun mode, we edit the page with the new wikitext and a brief summary.
 		if (!dryrun) {
 			try {
-			await step("editArticle", this.editArticle(pageName, newWikitext, "Automatic Infobox Update", false))
+				await step("editArticle", this.editArticle(pageName, newWikitext, "Automatic Infobox Update", false))
+				updatedShips.push(ship.title)
 			} catch (err: any) {
 				throw new Error("hi edit failed lol " + err.message)
 			}
@@ -406,19 +424,11 @@ class TurretsUpdater {
 	}
 }
 
-(async () => {
-	console.log((await fs.readFile("banner.txt")).toString())
-	console.log("Written by smallketchup82 & yname\n---------------------------------")
-	
-	if (dryrun) {
-		console.log(`${chalk.red("[!]")} Dry run is enabled! Halting for 3 seconds, terminate program if unintentional.`)
-		await new Promise(resolve => setTimeout(resolve, 3000))
-	}
-
+export async function initBot(protocol?: string, server?: string, path?: string) {
 	const bot = new NodeMW({
-		protocol: "https",
-		server: "robloxgalaxy.wiki",
-		path: "/",
+		protocol: protocol || "https",
+		server: server || "robloxgalaxy.wiki",
+		path: path || "/",
 		debug: verbose
 	})
 
@@ -432,6 +442,10 @@ class TurretsUpdater {
 		throw new Error("Login failed")
 	}
 
+	return bot
+}
+
+export async function initLoggers() {
 	async function logChange (name: string, revision: { revid: string | number } | null) {
 		if (dryrun) return
 		if (!process.env.WEBHOOK) throw new Error("No webhook specified")
@@ -462,13 +476,40 @@ class TurretsUpdater {
 		})
 	}
 
-	if (process.env.TURRETSONLY === "false") {
-		const shipupdater = new ShipUpdater()
-		await shipupdater.main(bot, logChange, logDiscord)
-	}
+	return { logChange, logDiscord }
+}
 
-	if (process.env.SHIPSONLY === "false") {
-		const turretupdater = new TurretsUpdater()
-		await turretupdater.main(bot, logChange, logDiscord)
-	}
-})()
+if (require.main === module) {
+	(async () => {
+		console.log((await fs.readFile("banner.txt")).toString())
+		console.log("Written by smallketchup82 & yname\n---------------------------------")
+		
+		if (dryrun) {
+			console.log(`${chalk.red("[!]")} Dry run is enabled! Halting for 3 seconds, terminate program if unintentional.`)
+			await new Promise(resolve => setTimeout(resolve, 3000))
+		}
+
+		const bot = await initBot()
+
+		const { logChange, logDiscord } = await initLoggers()
+
+		if (process.env.TURRETSONLY === "false") {
+			const shipupdater = new ShipUpdater()
+			await shipupdater.main(bot, logChange, logDiscord)
+		}
+
+		if (process.env.SHIPSONLY === "false") {
+			const turretupdater = new TurretsUpdater()
+			await turretupdater.main(bot, logChange, logDiscord)
+		}
+	})()
+} else {
+	(async () => {
+		console.log((await fs.readFile("banner.txt")).toString())
+		console.log("Written by smallketchup82 & yname\n---------------------------------")
+		
+		if (dryrun) {
+			console.log(`${chalk.red("[!]")} Dry run is enabled! Terminate program if unintentional.`)
+		}
+	})()
+}

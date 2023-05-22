@@ -39,9 +39,9 @@ const parameters_to_exempt: string[] = [
 class ShipUpdater {
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	bot: any
-	logChange!: (name: string, revision: { revid: string | number } | null) => void
+	logChange!: (name: string, revision: { revid: string | number } | null) => Promise<void>
 	SHIP_INFOBOX_REGEX!: RegExp
-	logDiscord!: (content: string) => void
+	logDiscord!: (content: string) => Promise<void>
 	// eslint-disable-next-line @typescript-eslint/ban-types
 	getArticle!: Function
 	// eslint-disable-next-line @typescript-eslint/ban-types
@@ -56,7 +56,7 @@ class ShipUpdater {
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	galaxypediaShipList: any
 	runcount!: number
-	async main(bot: any, logChange: (name: string, revision: { revid: string | number } | null) => void, logDiscord: (content: string) => void) {
+	async main(bot: any, logChange: (name: string, revision: { revid: string | number } | null) => Promise<void>, logDiscord: (content: string) => Promise<void>) {
 		this.SHIP_INFOBOX_REGEX = /{{\s*Ship[ _]Infobox(?:[^{}]|{{[^{}]*}}|{{{[^{}]*}}})+(?:(?!{{(?:[^{}]|{{[^{}]*}}|{{{[^{}]*}}})*)}})/si
 		this.bot = bot
 		this.logChange = logChange
@@ -97,6 +97,8 @@ class ShipUpdater {
 	async getShipsData () {
 		const response = await fetch(`https://galaxy.wingysam.xyz/api/v2/galaxypedia?token=${process.env.GALAXY_INFO_TOKEN}`)
 		if (!response.ok) throw new Error("Galaxy Info seems to be down")
+
+		// No clue what response is given and im too lazy to hard code the type definitions for it so im just gonna use any lol
 		const galaxyInfoShips = await response.json()
 		return galaxyInfoShips
 	}
@@ -106,7 +108,7 @@ class ShipUpdater {
 		if (!response.ok) throw new Error("Galaxypedia appears to be down.")
 
 		const galaxypediaPageList: string[] = (await response.json()).query.categorymembers.map((page: any) => page.title)
-		const shipsList = galaxypediaPageList.filter((pageName: any) => !pageName.startsWith("Category:"))
+		const shipsList: string[] = galaxypediaPageList.filter((pageName: any) => !pageName.startsWith("Category:"))
 
 		return shipsList
 	}
@@ -213,7 +215,7 @@ class ShipUpdater {
 			try {
 				const page = await this.getArticle(shipname)
 				if (page) {
-					// If the runcount is a multiple of 5, log to the discord webhook. Otherwise only log to console
+					// If the runcount is a multiple of 5, log the suspicions to the discord webhook. Otherwise only log to the console
 					if (this.runcount % 5 === 0) {
 						this.logDiscord(`**${shipname}** is not in the Ships category, but is in the Main namespace. Please check if it should be in the Ships category.`)
                     } else {

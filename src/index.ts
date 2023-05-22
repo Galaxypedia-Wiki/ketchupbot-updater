@@ -1,9 +1,11 @@
 import dotenv from "dotenv"
 dotenv.config()
 
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const WikiTextParser = require("parse-wikitext")
 const wikiTextParser = new WikiTextParser("robloxgalaxy.wiki")
 import fetch from "node-fetch"
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const NodeMW = require("nodemw")
 import chalk from "chalk"
 import { promisify } from "util"
@@ -12,15 +14,19 @@ import fs from "fs/promises"
 import { performance } from "perf_hooks"
 
 // Settings
-const verbose: Boolean = process.env.VERBOSE === "true"
-const dryrun: Boolean = process.env.DRYRUN === "true"
+const verbose: boolean = process.env.VERBOSE === "true"
+const dryrun: boolean = process.env.DRYRUN === "true"
 if (process.env.SHIP && process.env.SHIP !== "") {
 	console.log(chalk.yellowBright(`[!] Ship specified: ${process.env.SHIP}`))
 	process.env.SHIPSONLY = "true"
 }
 
 // Manually map the ship name obtained from the API to the name of the page on the wiki
-const SHIP_NAME_MAP: any = {
+// TODO: Move these to the env file
+type ShipNameMap = {
+	[key: string]: string
+}
+const SHIP_NAME_MAP: ShipNameMap = {
 	2018: "2018 Ship",
 	yname: "Yname (ship)"
 }
@@ -31,18 +37,26 @@ const parameters_to_exempt: string[] = [
 ]
 
 class ShipUpdater {
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	bot: any
-	logChange!: Function
+	logChange!: (name: string, revision: { revid: string | number } | null) => void
 	SHIP_INFOBOX_REGEX!: RegExp
-	logDiscord!: Function
+	logDiscord!: (content: string) => void
+	// eslint-disable-next-line @typescript-eslint/ban-types
 	getArticle!: Function
+	// eslint-disable-next-line @typescript-eslint/ban-types
 	editArticle!: Function
+	// eslint-disable-next-line @typescript-eslint/ban-types
 	getArticleWikitext!: Function
+	// eslint-disable-next-line @typescript-eslint/ban-types
 	getArticleRevisions!: Function
-	currentlyUpdating!: Boolean
+	currentlyUpdating!: boolean
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	shipsData: any
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	galaxypediaShipList: any
-	async main(bot: any, logChange: Function, logDiscord: Function) {
+	runcount!: number
+	async main(bot: any, logChange: (name: string, revision: { revid: string | number } | null) => void, logDiscord: (content: string) => void) {
 		this.SHIP_INFOBOX_REGEX = /{{\s*Ship[ _]Infobox(?:[^{}]|{{[^{}]*}}|{{{[^{}]*}}})+(?:(?!{{(?:[^{}]|{{[^{}]*}}|{{{[^{}]*}}})*)}})/si
 		this.bot = bot
 		this.logChange = logChange
@@ -51,11 +65,17 @@ class ShipUpdater {
 		this.editArticle = promisify(this.bot.edit.bind(this.bot))
 		this.getArticleWikitext = promisify(wikiTextParser.getArticle.bind(wikiTextParser))
 		this.getArticleRevisions = promisify(this.bot.getArticleRevisions.bind(this.bot))
-		cron.schedule("0 * * * *", () => this.updateGalaxypediaShips())
+		this.runcount = 0
+		cron.schedule("0 * * * *", async () => {
+			await this.updateGalaxypediaShips()
+		})
 		await this.updateGalaxypediaShips()
 	}
 
 	async updateGalaxypediaShips () {
+		function nth(n: number){return["st","nd","rd"][((n+90)%100-10)%10-1]||"th"}
+		console.log(`${nth(this.runcount + 1)} Ship Update Iteration`)
+
 		try {
 			if (this.currentlyUpdating) {
 				console.log(`${chalk.redBright("[!]")} Already updating ships; not updating`)
@@ -71,6 +91,7 @@ class ShipUpdater {
 		}
 
 		this.currentlyUpdating = false
+		this.runcount += 1
 	}
 
 	async getShipsData () {
@@ -84,10 +105,8 @@ class ShipUpdater {
 		const response = await fetch("https://robloxgalaxy.wiki/api.php?action=query&format=json&list=categorymembers&cmtitle=Category%3AShips&cmlimit=5000")
 		if (!response.ok) throw new Error("Galaxypedia appears to be down.")
 
-		const galaxypediaPageList: string[] = (await response.json()).query.categorymembers
-			.map((page: any) => page.title)
-		const shipsList = galaxypediaPageList
-			.filter((pageName: any) => !pageName.startsWith("Category:"))
+		const galaxypediaPageList: string[] = (await response.json()).query.categorymembers.map((page: any) => page.title)
+		const shipsList = galaxypediaPageList.filter((pageName: any) => !pageName.startsWith("Category:"))
 
 		return shipsList
 	}
@@ -107,13 +126,14 @@ class ShipUpdater {
 
 			// Grab the most recent edit made by the bot & send the revid to the discord webhook logger
 			// Grab the name of the page, including handling mapping. But don't throw an error if the page isnt found. Instead just return undefined
-			var pagename = await this.getShipPageName(ship, false)
-			var latestrevision = undefined;
+			const pagename = await this.getShipPageName(ship, false)
+			let latestrevision = undefined
+
 			// If the page exists, get the latest revision. If not, just return latestrevision as undefined
 			if (pagename) {
 				latestrevision = (await this.getArticleRevisions(pagename)).reverse()
 			}
-			var revision = null
+			let revision = null
 
 			// If the latest revision exists, filter it to only include the bot's edits. If it doesn't exist, just return revision as null
 			if (latestrevision) {
@@ -193,13 +213,18 @@ class ShipUpdater {
 			try {
 				const page = await this.getArticle(shipname)
 				if (page) {
-					this.logDiscord(`**${shipname}** is not in the Ships category, but is in the Main namespace. Please check if it should be in the Ships category.`)
-					console.log(chalk.yellowBright('[?]'), chalk.cyanBright(shipname) + ": " + chalk.yellowBright(`${shipname} is not in the Ships category, but is in the Main namespace. Please check if it should be in the Ships category.`))
+					// If the runcount is a multiple of 5, log to the discord webhook. Otherwise only log to console
+					if (this.runcount % 5 === 0) {
+						this.logDiscord(`**${shipname}** is not in the Ships category, but is in the Main namespace. Please check if it should be in the Ships category.`)
+                    } else {
+						console.log(chalk.yellowBright("[?]"), chalk.cyanBright(shipname) + ": " + chalk.yellowBright(`${shipname} is not in the Ships category, but is in the Main namespace. Please check if it should be in the Ships category.`))
+					}
 				}
 			} catch (err: any) {
-				throw new Error(chalk.redBright('[!] ') + chalk.cyanBright(shipname) + ": " + chalk.redBright(`Error while resolving suspicion: ${err.message}`))
+				throw new Error(chalk.redBright("[!] ") + chalk.cyanBright(shipname) + ": " + chalk.redBright(`Error while resolving suspicion: ${err.message}`))
 			}
 		}
+
 
 		// If error is false, we don't want to throw an error, we just want to return undefined. This is used when we're checking if a page exists, and we don't want to throw an error if it doesn't.
 		if (error === false) {
@@ -219,7 +244,7 @@ class ShipUpdater {
 		const matches = wikitext.match(this.SHIP_INFOBOX_REGEX)
 		if (!matches) throw new Error("Could not find infobox!")
 
-		var data = wikiTextParser.parseTemplate(matches[0]).namedParts
+		const data = wikiTextParser.parseTemplate(matches[0]).namedParts
 		if (data.image && data.image.startsWith("<gallery")) {
 			const boo = wikitext.match(/<gallery.*?>.*?<\/gallery>/sg)
 			if (boo) {
@@ -300,14 +325,18 @@ class ShipUpdater {
 class TurretsUpdater {
 	TURRET_TABLE_REGEX!: RegExp
 	bot: any
-	logChange!: Function
-	logDiscord!: Function
+	logChange!: (name: string, revision: { revid: string | number } | null) => void
+	logDiscord!: (content: string) => void
+	// eslint-disable-next-line @typescript-eslint/ban-types
 	getArticle!: Function
+	// eslint-disable-next-line @typescript-eslint/ban-types
 	editArticle!: Function
+	// eslint-disable-next-line @typescript-eslint/ban-types
 	getArticleWikitext!: Function
+	// eslint-disable-next-line @typescript-eslint/ban-types
 	getArticleRevisions!: Function
 	currentlyUpdating!: boolean
-	async main (bot: any, logChange: Function, logDiscord: Function) {
+	async main (bot: any, logChange: (name: string, revision: { revid: string | number } | null) => void, logDiscord: (content: string) => void) {
 		this.TURRET_TABLE_REGEX = /{\|\s*class="wikitable sortable".*?\|}/sig
 		this.bot = bot
 		this.logChange = logChange
@@ -348,7 +377,7 @@ class TurretsUpdater {
 
 	async updateTurrets(turretData: any) {
 		const turretPageWikitext = await this.getArticleWikitext("Turrets")
-		var cum = turretPageWikitext
+		let cum = turretPageWikitext
 
 		const turrettables = turretPageWikitext.match(this.TURRET_TABLE_REGEX)
 		if (turrettables.length > 6) throw new Error("Irregular number of tables found on Turret page, ensure that the number of tables stays at 6")
@@ -395,7 +424,7 @@ class TurretsUpdater {
 		server: "robloxgalaxy.wiki",
 		path: "/",
 		debug: verbose
-	});
+	})
 
 	const logIn = promisify(bot.logIn.bind(bot))
 
@@ -408,7 +437,9 @@ class TurretsUpdater {
 
 	async function logChange (name: string, revision: { revid: string | number } | null) {
 		if (dryrun) return
-		await fetch(process.env.WEBHOOK!, {
+		if (!process.env.WEBHOOK) throw new Error("No webhook specified")
+
+		await fetch(process.env.WEBHOOK, {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json"
@@ -421,7 +452,9 @@ class TurretsUpdater {
 
 	async function logDiscord (content: any) {
 		if (dryrun) return
-		await fetch(process.env.WEBHOOK!, {
+		if (!process.env.WEBHOOK) throw new Error("No webhook specified")
+
+		await fetch(process.env.WEBHOOK, {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json"

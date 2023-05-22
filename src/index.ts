@@ -243,17 +243,22 @@ class ShipUpdater {
 	}
 
 	async parseWikitext (wikitext: any) {
+		// This function parses the wikitext into a data object, which is basically just the infobox with its data in a more readable way.
+
+		// First we check if the wikitext has an infobox. If it doesn't, we throw an error.
 		const matches = wikitext.match(this.SHIP_INFOBOX_REGEX)
 		if (!matches) throw new Error("Could not find infobox!")
 
+		// Then we parse the infobox into a data object using the wiki-text-parser library.
 		const data = wikiTextParser.parseTemplate(matches[0]).namedParts
+
+		// We then check if the data object has an image. If it does, we check if the image is a gallery. If it is, we replace the image with the gallery.
 		if (data.image && data.image.startsWith("<gallery")) {
 			const boo = wikitext.match(/<gallery.*?>.*?<\/gallery>/sg)
 			if (boo) {
 				data.image = boo[0]
 			}
 		}
-		
 		
 		if (verbose) console.log("Ship Data Raw\n" + JSON.stringify(data, null, "\t"))
 		return data

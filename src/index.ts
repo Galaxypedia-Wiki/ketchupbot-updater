@@ -258,16 +258,18 @@ class ShipUpdater {
 	}
 
 	async mergeData (...objects: any[]) {
-		/* This function can be pretty confusing, so I'm going to give some clarification on what exactly it does.
-		First we initialize the data variable. This is what's going to hold our data.
-		So you can see we make a function called mergeObjectIn. For now, just ignore it. It will make sense in a second.
-		When this function is called, we give it two inputs (look up, you can see it being run with the arguments of (oldData,ship)). The first one is the old data, the next one is the new data that we obtain from the API.
-		You can see where we do the for loop where we basically iterate over the objects that we gather in the arguments of this function. Given that we've supplied the correct inputs. We should only be working with two objects.
-		The first pass will basically take the old data and input it into the data array. By doing this, we will have all the old data that the API doesn't supply for us. For example like the creator of a ship, something that editors will have manually added to the page.
-		By now, the data array will basically have all the old data that is currently present on the page.
-		Now what we do in the second pass is we take the data from the API. And we basically go ahead and add new data from the API or overwrite old data with the new data from the API, this is done using the line data[key] = obj[key].
-		So let's say that the API supplies us with the shield parameter, but the old data that's currently on the page doesn't have that. This way we will be adding that parameter to the data array. But let's say that the original page did have that parameter. What we will be doing is overwriting the old data with the data that we obtained with the API.
-		So yeah, that's basically an explanation of this function, because it's really confusing to understand what's going on here.*/
+		/**
+		 * This function can be pretty confusing, so I'm going to give some clarification on what exactly it does.
+		 * First we initialize the data variable. This is what's going to hold our data.
+		 * So you can see we make a function called mergeObjectIn. For now, just ignore it. It will make sense in a second.
+		 * When this function is called, we give it two inputs (look up, you can see it being run with the arguments of (oldData,ship)). The first one is the old data, the next one is the new data that we obtain from the API.
+		 * You can see where we do the for loop where we basically iterate over the objects that we gather in the arguments of this function. Given that we've supplied the correct inputs. We should only be working with two objects.
+		 * The first pass will basically take the old data and input it into the data array. By doing this, we will have all the old data that the API doesn't supply for us. For example like the creator of a ship, something that editors will have manually added to the page.
+		 * By now, the data array will basically have all the old data that is currently present on the page.
+		 * Now what we do in the second pass is we take the data from the API. And we basically go ahead and add new data from the API or overwrite old data with the new data from the API, this is done using the line data[key] = obj[key].
+		 * So let's say that the API supplies us with the shield parameter, but the old data that's currently on the page doesn't have that. This way we will be adding that parameter to the data array. But let's say that the original page did have that parameter. What we will be doing is overwriting the old data with the data that we obtained with the API.
+		 * So yeah, that's basically an explanation of this function, because it's really confusing to understand what's going on here.
+		*/
 		
 		const data: any = {}
 		function mergeObjectIn (obj: any) {

@@ -5,8 +5,7 @@ dotenv.config()
 const WikiTextParser = require("parse-wikitext")
 const wikiTextParser = new WikiTextParser("robloxgalaxy.wiki")
 import fetch from "node-fetch"
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const NodeMW = require("nodemw")
+import NodeMW from "nodemw"
 import chalk from "chalk"
 import { promisify } from "util"
 import cron from "node-cron"
@@ -38,25 +37,19 @@ const parameters_to_exempt: string[] = [
 
 class ShipUpdater {
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	bot: any
+	bot!: NodeMW
 	logChange!: (name: string, revision: { revid: string | number } | null) => Promise<void>
 	SHIP_INFOBOX_REGEX!: RegExp
 	logDiscord!: (content: string) => Promise<void>
-	// eslint-disable-next-line @typescript-eslint/ban-types
-	getArticle!: Function
-	// eslint-disable-next-line @typescript-eslint/ban-types
-	editArticle!: Function
-	// eslint-disable-next-line @typescript-eslint/ban-types
-	getArticleWikitext!: Function
-	// eslint-disable-next-line @typescript-eslint/ban-types
-	getArticleRevisions!: Function
+	getArticle!: (articleName: string) => Promise<any>
+	editArticle!: (title: string, content: string, summary: string, minor: boolean) => Promise<any>
+	getArticleWikitext!: (title: string) => Promise<any>
+	getArticleRevisions!: (title: string) => Promise<any>
 	currentlyUpdating!: boolean
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	shipsData: any
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	galaxypediaShipList: any
 	runcount!: number
-	async main(bot: any, logChange: (name: string, revision: { revid: string | number } | null) => Promise<void>, logDiscord: (content: string) => Promise<void>) {
+	async main(bot: NodeMW, logChange: (name: string, revision: { revid: string | number } | null) => Promise<void>, logDiscord: (content: string) => Promise<void>) {
 		this.SHIP_INFOBOX_REGEX = /{{\s*Ship[ _]Infobox(?:[^{}]|{{[^{}]*}}|{{{[^{}]*}}})+(?:(?!{{(?:[^{}]|{{[^{}]*}}|{{{[^{}]*}}})*)}})/si
 		this.bot = bot
 		this.logChange = logChange
@@ -422,16 +415,17 @@ class TurretsUpdater {
 		await new Promise(resolve => setTimeout(resolve, 3000))
 	}
 
-	const bot: any = new NodeMW({
+	const bot = new NodeMW({
 		protocol: "https",
 		server: "robloxgalaxy.wiki",
 		path: "/",
 		debug: verbose
 	})
 
-	const logIn = promisify(bot.logIn.bind(bot))
+	const logIn = promisify(bot.logIn.bind(bot)) as (username: string, password: string) => Promise<void>
 
 	try {
+		if (!process.env.MW_LOGIN || !process.env.MW_PASS) throw new Error("No login details specified")
 		await logIn(process.env.MW_LOGIN, process.env.MW_PASS)
 	} catch (error: any) {
 		console.error(chalk.red("------------ LOGIN ERROR ------------\n") + error.stack)

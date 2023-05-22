@@ -264,7 +264,7 @@ class ShipUpdater {
 		 * This function can be pretty confusing, so I'm going to give some clarification on what exactly it does.
 		 * First we initialize the data variable. This is what's going to hold our data.
 		 * So you can see we make a function called mergeObjectIn. For now, just ignore it. It will make sense in a second.
-		 * When this function is called, we give it two inputs (look up, you can see it being run with the arguments of (oldData,ship)). The first one is the old data, the next one is the new data that we obtain from the API.
+		 * When this function is called, we give it two inputs (look up, you can see it being run with the arguments of (oldData, ship)). The first one is the old data, the next one is the new data that we obtain from the API.
 		 * You can see where we do the for loop where we basically iterate over the objects that we gather in the arguments of this function. Given that we've supplied the correct inputs. We should only be working with two objects.
 		 * The first pass will basically take the old data and input it into the data array. By doing this, we will have all the old data that the API doesn't supply for us. For example like the creator of a ship, something that editors will have manually added to the page.
 		 * By now, the data array will basically have all the old data that is currently present on the page.
@@ -297,13 +297,7 @@ class ShipUpdater {
 
 		// Sort the data alphabetically, idk how it works but it works lol
 		const sorted: any = {}
-		const keys: any[] = []
-	
-		for (const key in data) {
-			keys.push(key)
-		}
-	
-		keys.sort((a, b) => a.localeCompare(b))
+		const keys: string[] = Object.keys(data).sort((a, b) => a.localeCompare(b))
 	
 		for (const key of keys) {
 			sorted[key] = data[key]

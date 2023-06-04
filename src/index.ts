@@ -386,7 +386,8 @@ class TurretsUpdater {
 	}
 
 	async getTurretsData() {
-		const response = await fetch("https://galaxy.wingysam.xyz/api/v2/ships-turrets/raw")
+		if (!process.env.GALAXY_INFO_API) throw new Error("Galaxy Info API not specified in .env file")
+		const response = await fetch(`${process.env.GALAXY_INFO_API.trim()}/api/v2/ships-turrets/raw`)
 		if (!response.ok) throw new Error("Galaxy Info seems to be down - Turrets")
 		const galaxyInfoTurrets = await response.json()
 		return galaxyInfoTurrets.serializedTurrets

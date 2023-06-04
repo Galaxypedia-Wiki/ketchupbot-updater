@@ -38,6 +38,22 @@ const parameters_to_exempt: string[] = [
 let updatedShips: string[] = []
 let skippedShips: string[] = []
 
+/**
+ * Updates the ship infobox on the wiki with the data from the Galaxy Info API
+ * 
+ * @property {NodeMW} bot - The NodeMW bot instance. Provided by {@link initBot}
+ * @property {Function} logChange - Edit logger
+ * @property {Function} logDiscord - Discord logger
+ * @property {boolean} currentlyUpdating - Whether the updater is currently running
+ * @property {any} shipsData - The data from the Galaxy Info API
+ * @property {any} galaxypediaShipList - The list of ships on the wiki
+ * @property {number} runcount - The number of times the updater has run
+ * @property {RegExp} SHIP_INFOBOX_REGEX - The regex to match the ship infobox
+ * @property {Function} getArticle - The getArticle function from NodeMW
+ * @property {Function} editArticle - The editArticle function from NodeMW
+ * @property {Function} getArticleWikitext - The getArticleWikitext function from parse-wikitext
+ * @property {Function} getArticleRevisions - The getArticleRevisions function from NodeMW
+*/
 export class ShipUpdater {
 	bot!: NodeMW
 	logChange!: (name: string, revision: { revid: string | number } | null) => Promise<void>
@@ -51,6 +67,16 @@ export class ShipUpdater {
 	shipsData: any
 	galaxypediaShipList: any
 	runcount!: number
+
+	/**
+	 * Updates the ship infobox on the wiki with the data from the Galaxy Info API
+	 * 
+	 * @param {NodeMW} bot - The bot instance
+	 * @param {Function} logChange - The function to log the change to the wiki
+	 * @param {Function} logDiscord - The function to log the change to Discord
+	 * @param {boolean} [singlepass=false] - False to run the updater on a schedule, true to run it without scheduling
+	 * @returns {Promise<cron.ScheduledTask | void>}
+	 */
 	async main(bot: NodeMW, logChange: (name: string, revision: { revid: string | number } | null) => Promise<void>, logDiscord: (content: string) => Promise<void>, singlepass = false): Promise<cron.ScheduledTask | void> {
 		this.SHIP_INFOBOX_REGEX = /{{\s*Ship[ _]Infobox(?:[^{}]|{{[^{}]*}}|{{{[^{}]*}}})+(?:(?!{{(?:[^{}]|{{[^{}]*}}|{{{[^{}]*}}})*)}})/si
 		this.bot = bot
@@ -71,7 +97,12 @@ export class ShipUpdater {
 		}
 	}
 
-	async updateGalaxypediaShips () {
+	/**
+	 * Initial handler for the update process
+	 * 
+	 * @returns {Promise<{ updatedShips: string[]; skippedShips: string[] } | void>}
+	 */
+	async updateGalaxypediaShips (): Promise<{ updatedShips: string[]; skippedShips: string[] } | void> {
 		function nth(n: number){return["st","nd","rd"][((n+90)%100-10)%10-1]||"th"}
 		console.log(`${nth(this.runcount + 1)} Ship Update Iteration`)
 
@@ -101,7 +132,12 @@ export class ShipUpdater {
 		}
 	}
 
-	async getShipsData () {
+	/**
+	 * Fetch the ship data from the Galaxy Info API
+	 * 
+	 * @returns {Promise<any>}
+	 */
+	async getShipsData(): Promise<any> {
 		if (!process.env.GALAXY_INFO_API) throw new Error("Galaxy Info API Endpoint is not specified in .env")
 		if (!process.env.GALAXY_INFO_TOKEN) throw new Error("Galaxy Info Token is not specified in .env")
 
@@ -113,7 +149,12 @@ export class ShipUpdater {
 		return galaxyInfoShips
 	}
 
-	async getGalaxypediaShipList () {
+	/** 
+	 * Fetch the list of ships from the Galaxypedia
+	 * 
+	 * @returns {Promise<string[]>}
+	 */
+	async getGalaxypediaShipList(): Promise<string[]> {
 		const response = await fetch("https://robloxgalaxy.wiki/api.php?action=query&format=json&list=categorymembers&cmtitle=Category%3AShips&cmlimit=5000")
 		if (!response.ok) throw new Error("Galaxypedia appears to be down.")
 
@@ -123,14 +164,27 @@ export class ShipUpdater {
 		return shipsList
 	}
 
-	async updateShips () {
+	/**
+	 * Handles updating each ship
+	 * 
+	 * @returns {Promise<void>}
+	 */
+	async updateShips(): Promise<void> {
 		for (const shipName of Object.keys(this.shipsData).sort()) {
 			await this.handleShip(this.shipsData[shipName])
 		}
 		console.log(chalk.greenBright("Ships updated!"))
 	}
 
-	async handleShip (ship: any) {
+	/** 
+	 * Handle updating a ship
+	 * 
+	 * The Ship environment variable can be used here to update a specific ship
+	 * 
+	 * @param {any} ship - The data from the Galaxy Info API for the ship
+	 * @returns {Promise<void>}
+	 */
+	async handleShip(ship: any): Promise<void> {
 		if (process.env.SHIP && process.env.SHIP !== "" && ship.title !== process.env.SHIP) return
 		try {
 			console.log(`${chalk.yellow("Processing ")} ${chalk.cyanBright(ship.title)}...`)
@@ -161,6 +215,7 @@ export class ShipUpdater {
 				}
 			}
 
+			if (!steps) throw new Error("No steps were returned from the update function")
 			const perf = verbose ? ` perf: ${steps.join(", ")}` : ""
 			console.log(`${chalk.green("Updated")} ${chalk.cyanBright(ship.title)}!` + perf)
 			await this.logChange(ship.title, revision)
@@ -172,7 +227,13 @@ export class ShipUpdater {
 		}
 	}
 
-	async updateShip (ship: any) {
+	/**
+	 * Update a ship
+	 * 
+	 * @param {any} ship - The data from the Galaxy Info API for the ship
+	 * @returns {Promise<string[] | void>}
+	 */
+	async updateShip(ship: any): Promise<string[] | void> {
 		// Setup performance logging
 		const steps: string[] = []
 		async function step (name: string, prom: Promise<any>) {
@@ -216,7 +277,14 @@ export class ShipUpdater {
 		return steps
 	}
 
-	async getShipPageName (ship: any, error?: boolean) {
+	/**
+	 * Get the page name of a ship
+	 * 
+	 * @param {any} ship - The data from the Galaxy Info API for the ship
+	 * @param {any} [error] - Whether or not to throw an error if the page doesn't exist
+	 * @returns {Promise<any>}
+	 */
+	async getShipPageName(ship: any, error?: boolean): Promise<any> {
 		// Check if the ship is in the ship list. If it is, return the ship name.
 		if (this.galaxypediaShipList.includes(ship.title)) return ship.title
 		
@@ -256,7 +324,13 @@ export class ShipUpdater {
 		
 	}
 
-	async parseWikitext (wikitext: any) {
+	/**
+	 * Parse the wikitext of a ship page into a data object
+	 * 
+	 * @param {any} wikitext - The wikitext of the ship page
+	 * @returns {Promise<any>}
+	 */
+	async parseWikitext(wikitext: any): Promise<any> {
 		// This function parses the wikitext into a data object, which is basically just the infobox with its data in a more readable way.
 
 		// First we check if the wikitext has an infobox. If it doesn't, we throw an error.
@@ -278,20 +352,23 @@ export class ShipUpdater {
 		return data
 	}
 
-	async mergeData (...objects: any[]) {
-		/**
-		 * This function can be pretty confusing, so I'm going to give some clarification on what exactly it does.
-		 * First we initialize the data variable. This is what's going to hold our data.
-		 * So you can see we make a function called mergeObjectIn. For now, just ignore it. It will make sense in a second.
-		 * When this function is called, we give it two inputs (look up, you can see it being run with the arguments of (oldData, ship)). The first one is the old data, the next one is the new data that we obtain from the API.
-		 * You can see where we do the for loop where we basically iterate over the objects that we gather in the arguments of this function. Given that we've supplied the correct inputs. We should only be working with two objects.
-		 * The first pass will basically take the old data and input it into the data array. By doing this, we will have all the old data that the API doesn't supply for us. For example like the creator of a ship, something that editors will have manually added to the page.
-		 * By now, the data array will basically have all the old data that is currently present on the page.
-		 * Now what we do in the second pass is we take the data from the API. And we basically go ahead and add new data from the API or overwrite old data with the new data from the API, this is done using the line data[key] = obj[key].
-		 * So let's say that the API supplies us with the shield parameter, but the old data that's currently on the page doesn't have that. This way we will be adding that parameter to the data array. But let's say that the original page did have that parameter. What we will be doing is overwriting the old data with the data that we obtained with the API.
-		 * So yeah, that's basically an explanation of this function, because it's really confusing to understand what's going on here.
-		*/
-		
+	/**
+	 * This function can be pretty confusing, so I'm going to give some clarification on what exactly it does.  
+	 * First we initialize the data variable. This is what's going to hold our data.  
+	 * So you can see we make a function called mergeObjectIn. For now, just ignore it. It will make sense in a second.  
+	 * When this function is called, we give it two inputs (look up, you can see it being run with the arguments of (oldData, ship)). The first one is the old data, the next one is the new data that we obtain from the API.  
+	 * You can see where we do the for loop where we basically iterate over the objects that we gather in the arguments of this function. Given that we've supplied the correct inputs. We should only be working with two objects.  
+	 * The first pass will basically take the old data and input it into the data array. By doing this, we will have all the old data that the API doesn't supply for us. For example like the creator of a ship, something that editors will have manually added to the page.  
+	 * By now, the data array will basically have all the old data that is currently present on the page.  
+	 * Now what we do in the second pass is we take the data from the API. And we basically go ahead and add new data from the API or overwrite old data with the new data from the API, this is done using the line data[key] = obj[key].  
+	 * So let's say that the API supplies us with the shield parameter, but the old data that's currently on the page doesn't have that. This way we will be adding that parameter to the data array. But let's say that the original page did have that parameter. What we will be doing is overwriting the old data with the data that we obtained with the API.  
+	 * So yeah, that's basically an explanation of this function, because it's really confusing to understand what's going on here.
+	 * 
+	 * @summary Merge the data from the API with the data from the page
+	 * @param {any[]} objects - The data object of the ship
+	 * @returns {Promise<any>}
+	 */
+	async mergeData(...objects: any[]) {
 		const data: any = {}
 		function mergeObjectIn (obj: any) {
 			for (const key of Object.keys(obj)) {
@@ -326,7 +403,7 @@ export class ShipUpdater {
 		return sorted
 	}
 
-	async formatDataIntoWikitext (data: any, oldWikitext: string) {
+	async formatDataIntoWikitext(data: any, oldWikitext: string) {
 		const newWikitext = oldWikitext.replace(this.SHIP_INFOBOX_REGEX, "{{Ship Infobox\n|" + Object.entries(data).map(([key, val]) => `${key} = ${val}`).join("\n|") + "\n}}")
 
 		if (verbose) {
@@ -428,7 +505,15 @@ class TurretsUpdater {
 	}
 }
 
-export async function initBot(protocol?: string, server?: string, path?: string) {
+/**
+ * Init the NodeMW bot
+ * 
+ * @param {string} [protocol]
+ * @param {string} [server]
+ * @param {string} [path]
+ * @returns {Promise<NodeMW>}
+ */
+export async function initBot(protocol?: string, server?: string, path?: string): Promise<NodeMW> {
 	const bot = new NodeMW({
 		protocol: protocol || "https",
 		server: server || "robloxgalaxy.wiki",
@@ -449,8 +534,9 @@ export async function initBot(protocol?: string, server?: string, path?: string)
 	return bot
 }
 
+/** Initialize the logger functions */
 export async function initLoggers() {
-	async function logChange (name: string, revision: { revid: string | number } | null) {
+	async function logChange(name: string, revision: { revid: string | number } | null) {
 		if (dryrun) return
 		if (!process.env.WEBHOOK) throw new Error("No webhook specified")
 

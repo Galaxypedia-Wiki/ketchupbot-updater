@@ -102,7 +102,10 @@ export class ShipUpdater {
 	}
 
 	async getShipsData () {
-		const response = await fetch(`https://galaxy.wingysam.xyz/api/v2/galaxypedia?token=${process.env.GALAXY_INFO_TOKEN}`)
+		if (!process.env.GALAXY_INFO_API) throw new Error("Galaxy Info API Endpoint is not specified in .env")
+		if (!process.env.GALAXY_INFO_TOKEN) throw new Error("Galaxy Info Token is not specified in .env")
+
+		const response = await fetch( `${process.env.GALAXY_INFO_API.trim()}/api/v2/galaxypedia?token=${process.env.GALAXY_INFO_TOKEN}`)
 		if (!response.ok) throw new Error("Galaxy Info seems to be down")
 
 		// No clue what response is given and im too lazy to hard code the type definitions for it so im just gonna use any lol

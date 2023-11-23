@@ -1,4 +1,4 @@
-FROM node:20
+FROM node:20-alpine
 WORKDIR /app
 COPY package*.json .
 COPY tsconfig.json .
@@ -6,7 +6,7 @@ COPY src ./src
 RUN npm install
 RUN npx tsc
 
-FROM node:20
+FROM node:20-alpine
 ENV NODE_ENV production
 WORKDIR /app
 COPY package*.json .

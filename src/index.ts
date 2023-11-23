@@ -77,7 +77,7 @@ export class ShipUpdater {
 	 * @param {boolean} [singlepass=false] - False to run the updater on a schedule, true to run it without scheduling
 	 * @returns {Promise<cron.ScheduledTask | void>}
 	 */
-	async main(bot: NodeMW, logChange: (name: string, revision: { revid: string | number } | null) => Promise<void>, logDiscord: (content: string) => Promise<void>, singlepass = false): Promise<cron.ScheduledTask | void> {
+	async main(bot: NodeMW, logChange: (name: string, revision: { revid: string | number } | null) => Promise<void>, logDiscord: (content: string) => Promise<void>, singlepass: boolean = false): Promise<cron.ScheduledTask | void> {
 		this.SHIP_INFOBOX_REGEX = /{{\s*Ship[ _]Infobox(?:[^{}]|{{[^{}]*}}|{{{[^{}]*}}})+(?:(?!{{(?:[^{}]|{{[^{}]*}}|{{{[^{}]*}}})*)}})/si
 		this.bot = bot
 		this.logChange = logChange
@@ -416,6 +416,7 @@ export class ShipUpdater {
 	}
 }
 
+// Note to self: Improve documentation for this module
 class TurretsUpdater {
 	TURRET_TABLE_REGEX!: RegExp
 	bot: any

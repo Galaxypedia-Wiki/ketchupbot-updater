@@ -1,7 +1,9 @@
 services:
     gpedia-updater:
         image: gpedia-updater
-        container_name: gpedia-updater
+        container_name: ketchupbot-updater
         build: .
         restart: always
         env_file: .env
+        labels:
+          - "com.centurylinklabs.watchtower.enable=true"

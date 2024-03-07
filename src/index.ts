@@ -581,6 +581,7 @@ if (require.main === module) {
 		if (process.env.TURRETSONLY === "false") {
 			const shipupdater = new ShipUpdater(bot, logChange, logDiscord)
 			await shipupdater.startScheduler()
+                        await shipupdater.updateGalaxypediaShips()
 		}
 
 		if (process.env.SHIPSONLY === "false") {

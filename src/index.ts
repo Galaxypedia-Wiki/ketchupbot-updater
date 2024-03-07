@@ -55,30 +55,20 @@ let skippedShips: string[] = []
  * @property {Function} getArticleRevisions - The getArticleRevisions function from NodeMW
 */
 export class ShipUpdater {
-	bot!: NodeMW
-	logChange!: (name: string, revision: { revid: string | number } | null) => Promise<void>
-	SHIP_INFOBOX_REGEX!: RegExp
-	logDiscord!: (content: string) => Promise<void>
-	getArticle!: (articleName: string) => Promise<any>
-	editArticle!: (title: string, content: string, summary: string, minor: boolean) => Promise<any>
-	getArticleWikitext!: (title: string) => Promise<any>
-	getArticleRevisions!: (title: string) => Promise<any>
-	currentlyUpdating!: boolean
+	bot: NodeMW
+	logChange: (name: string, revision: { revid: string | number } | null) => Promise<void>
+	SHIP_INFOBOX_REGEX: RegExp = /{{\s*Ship[ _]Infobox(?:[^{}]|{{[^{}]*}}|{{{[^{}]*}}})+(?:(?!{{(?:[^{}]|{{[^{}]*}}|{{{[^{}]*}}})*)}})/si
+	logDiscord: (content: string) => Promise<void>
+	getArticle: (articleName: string) => Promise<any>
+	editArticle: (title: string, content: string, summary: string, minor: boolean) => Promise<any>
+	getArticleWikitext: (title: string) => Promise<any>
+	getArticleRevisions: (title: string) => Promise<any>
+	currentlyUpdating: boolean = false
 	shipsData: any
 	galaxypediaShipList: any
-	runcount!: number
+	runcount: number
 
-	/**
-	 * Updates the ship infobox on the wiki with the data from the Galaxy Info API
-	 * 
-	 * @param {NodeMW} bot - The bot instance
-	 * @param {Function} logChange - The function to log the change to the wiki
-	 * @param {Function} logDiscord - The function to log the change to Discord
-	 * @param {boolean} [singlepass=false] - False to run the updater on a schedule, true to run it without scheduling
-	 * @returns {Promise<cron.ScheduledTask | void>}
-	 */
-	async main(bot: NodeMW, logChange: (name: string, revision: { revid: string | number } | null) => Promise<void>, logDiscord: (content: string) => Promise<void>, singlepass: boolean = false): Promise<cron.ScheduledTask | void> {
-		this.SHIP_INFOBOX_REGEX = /{{\s*Ship[ _]Infobox(?:[^{}]|{{[^{}]*}}|{{{[^{}]*}}})+(?:(?!{{(?:[^{}]|{{[^{}]*}}|{{{[^{}]*}}})*)}})/si
+	constructor(bot: NodeMW, logChange: (name: string, revision: { revid: string | number } | null) => Promise<void>, logDiscord: (content: string) => Promise<void>) {
 		this.bot = bot
 		this.logChange = logChange
 		this.logDiscord = logDiscord
@@ -87,18 +77,22 @@ export class ShipUpdater {
 		this.getArticleWikitext = promisify(wikiTextParser.getArticle.bind(wikiTextParser))
 		this.getArticleRevisions = promisify(this.bot.getArticleRevisions.bind(this.bot))
 		this.runcount = 0
-
-		if (!singlepass) {
-			const scheduler = cron.schedule("0 * * * *", async () => {
-				await this.updateGalaxypediaShips()
-			})
-			await this.updateGalaxypediaShips()
-			return scheduler
-		}
 	}
 
 	/**
-	 * Initial handler for the update process
+	 * Start the updater. You only need this if you want the library to handle scheduling. You can run the functions manually if you want to handle scheduling yourself.
+	 * 
+	 * @returns {cron.ScheduledTask}
+	 */
+	startScheduler(): cron.ScheduledTask {
+		const scheduler = cron.schedule("0 * * * *", async () => {
+			await this.updateGalaxypediaShips()
+		})
+		return scheduler
+	}
+
+	/**
+	 * Initial handler for the update process. You probably want to be using this if you're manually handling the scheduling.
 	 * 
 	 * @returns {Promise<{ updatedShips: string[]; skippedShips: string[] } | void>}
 	 */
@@ -536,7 +530,7 @@ export async function initBot(protocol?: string, server?: string, path?: string)
 }
 
 /** Initialize the logger functions */
-export async function initLoggers() {
+export function initLoggers() {
 	async function logChange(name: string, revision: { revid: string | number } | null) {
 		if (dryrun) return
 		if (!process.env.WEBHOOK) throw new Error("No webhook specified")
@@ -585,8 +579,9 @@ if (require.main === module) {
 		const { logChange, logDiscord } = await initLoggers()
 
 		if (process.env.TURRETSONLY === "false") {
-			const shipupdater = new ShipUpdater()
-			await shipupdater.main(bot, logChange, logDiscord)
+			const shipupdater = new ShipUpdater(bot, logChange, logDiscord)
+			await shipupdater.startScheduler()
+                        await shipupdater.updateGalaxypediaShips()
 		}
 
 		if (process.env.SHIPSONLY === "false") {

@@ -564,10 +564,13 @@ export function initLoggers() {
 	return { logChange, logDiscord }
 }
 
+async function printBanner() {
+	console.log((await fs.readFile("banner.txt")).toString())
+	console.log("Written by smallketchup82 with the help of yname\n---------------------------------")
+}
 if (require.main === module) {
 	(async () => {
-		console.log((await fs.readFile("banner.txt")).toString())
-		console.log("Written by smallketchup82 & yname\n---------------------------------")
+		await printBanner()
 		
 		if (dryrun) {
 			console.log(`${chalk.red("[!]")} Dry run is enabled! Halting for 3 seconds, terminate program if unintentional.`)
@@ -591,8 +594,7 @@ if (require.main === module) {
 	})()
 } else {
 	(async () => {
-		console.log((await fs.readFile("banner.txt")).toString())
-		console.log("Written by smallketchup82 & yname\n---------------------------------")
+		await printBanner()
 		
 		if (dryrun) {
 			console.log(`${chalk.red("[!]")} Dry run is enabled! Terminate program if unintentional.`)

@@ -1,5 +1,5 @@
 {
-  "name": "ketchupbot-updater",
+  "name": "@smallketchup82/ketchupbot-updater",
   "version": "1.0.0",
   "description": "",
   "main": "dist/index.js",

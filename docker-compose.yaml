@@ -1,6 +1,6 @@
 services:
     gpedia-updater:
-        image: gpedia-updater
+        image: ghcr.io/smallketchup82/ketchupbot-updater:main
         container_name: ketchupbot-updater
         build: .
         restart: always

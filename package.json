@@ -34,6 +34,6 @@
     "eslint-plugin-n": "^15.7.0",
     "eslint-plugin-promise": "^6.1.1",
     "typedoc": "^0.25.3",
-    "typescript": "5.2.x"
+    "typescript": "5.4.x"
   }
 }

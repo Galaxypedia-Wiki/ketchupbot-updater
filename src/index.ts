@@ -38,6 +38,8 @@ const parameters_to_exempt: string[] = [
 let updatedShips: string[] = []
 let skippedShips: string[] = []
 
+let skiplogs: string[] = []
+
 /**
  * Updates the ship infobox on the wiki with the data from the Galaxy Info API
  * 
@@ -181,7 +183,7 @@ export class ShipUpdater {
 	async handleShip(ship: any): Promise<void> {
 		if (process.env.SHIP && process.env.SHIP !== "" && ship.title !== process.env.SHIP) return
 		try {
-			console.log(`${chalk.yellow("Processing ")} ${chalk.cyanBright(ship.title)}...`)
+			console.log(`${chalk.yellow("Processing")} ${chalk.cyanBright(ship.title)}...`)
 			const steps = await this.updateShip(ship)
 
 			// Grab the most recent edit made by the bot & send the revid to the discord webhook logger
@@ -293,6 +295,7 @@ export class ShipUpdater {
 				if (page) {
 					// If the runcount is a multiple of 5, log the suspicions to the discord webhook. Otherwise only log to the console
 					if (this.runcount % 5 === 0) {
+						// If the ship name isn't in skiplogs, log it to the discord webhook.
 						this.logDiscord(`**${shipname}** is not in the Ships category, but is in the Main namespace. Please check if it should be in the Ships category.`)
                     } else {
 						console.log(chalk.yellowBright("[?]"), chalk.cyanBright(shipname) + ": " + chalk.yellowBright(`${shipname} is not in the Ships category, but is in the Main namespace. Please check if it should be in the Ships category.`))

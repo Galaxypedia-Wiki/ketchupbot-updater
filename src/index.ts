@@ -38,8 +38,6 @@ const parameters_to_exempt: string[] = [
 let updatedShips: string[] = []
 let skippedShips: string[] = []
 
-let skiplogs: string[] = []
-
 /**
  * Updates the ship infobox on the wiki with the data from the Galaxy Info API
  * 

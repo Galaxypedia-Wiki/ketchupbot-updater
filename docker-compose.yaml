@@ -1,9 +1,0 @@
-services:
-    gpedia-updater:
-        image: ghcr.io/smallketchup82/ketchupbot-updater:main
-        container_name: ketchupbot-updater
-        build: .
-        restart: always
-        env_file: .env
-        labels:
-          - "com.centurylinklabs.watchtower.enable=true"

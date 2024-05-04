@@ -1,5 +1,7 @@
 /**
- * Wikitext parser utility class
+ * WikiText Parser Utility
+ * 
+ * This class provides utility functions to parse WikiText.
  */
 export default class WikiParser {
     /**

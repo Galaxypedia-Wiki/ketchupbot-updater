@@ -4,13 +4,14 @@ import { program } from "commander";
 import { pathToFileURL } from "url";
 
 program
-    .option("-s, --ships <BOOLEAN>", "Only update ships", false)
+    .option("-s, --ships", "Only update ships", false)
     .option("-t, --turrets", "Only update turrets", false);
 
 program.parse();
 const OPTIONS = program.opts();
 
 void (async () => {
+    
     console.log((await fs.readFile("banner.txt")).toString());
 
     if (process.env.NODE_ENV !== "production") {
@@ -20,5 +21,6 @@ void (async () => {
     }
 
     // Check if the script is being run directly
+    // TODO: Probably find a more robust way to do this
     if (import.meta.url !== pathToFileURL(process.argv[1]).href) return;
 })();

@@ -18,11 +18,10 @@ export default class WikiParser {
         let in_template = false;
         let last_index = 0;
 
-        // Use a regular expression to match the desired patterns
+        // Use a regular expression to match any of the following: [[, ]], {{, }}, |
         const REGEX = /\[\[|\]\]|\{\{|\}\}|\|/g;
         let match;
 
-        // Iterate over each match
         while ((match = REGEX.exec(text)) !== null) {
             const [SYMBOL] = match;
             const INDEX = match.index;
@@ -60,16 +59,14 @@ export default class WikiParser {
     }
 
     /**
-     * Splits the given template into an array of parts.
+     * Splits the given infobox and returns it's infobox parameters.
      *
      * @param text - The text to be parsed.
-     * @returns _.
+     * @returns Record<string, string> containing the infobox paramaters.
      */
     static parseInfobox(text: string) {
 
-        if (text.startsWith(`{{`) && text.endsWith(`}}`)) {
-            text = text.slice(2, -2);
-        }
+        if (text.startsWith(`{{`) && text.endsWith(`}}`)) text = text.slice(2, -2);
 
         let infobox_array: string[] = WikiParser.splitTemplate(text);
         infobox_array.shift();
@@ -84,12 +81,10 @@ export default class WikiParser {
             return acc;
         },{});
 
-        // Check if the image key's value is a gallery. If so, extract the gallery from the original text and assign it to the image key.
         if (INFOBOX_DICT.image?.startsWith("<gallery")) {
+            // Grab the gallery from the original text
 			const ORIGINAL_GALLERY = text.match(/<gallery.*?>.*?<\/gallery>/sg);
-			if (ORIGINAL_GALLERY) {
-				INFOBOX_DICT.image = ORIGINAL_GALLERY[0];
-			}
+			if (ORIGINAL_GALLERY) INFOBOX_DICT.image = ORIGINAL_GALLERY[0];
 		}
 
         return INFOBOX_DICT;

@@ -3,7 +3,7 @@
         "2018": "2018 Ship",
         "yname": "Yname (Ship)"
    },
-   "parameters_to_exempt": [
+   "parameter_exclusions": [
         "damage_res"
    ]
 }

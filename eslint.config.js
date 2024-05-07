@@ -8,8 +8,10 @@ export default tseslint.config(
     eslint.configs.recommended,
     ...tseslint.configs.stylisticTypeChecked,
     ...tseslint.configs.recommendedTypeChecked,
+    ...tseslint.configs.strictTypeChecked,
     prettierConfig,
     {
+        ignores: ["eslint.config.js"],
         languageOptions: {
             parserOptions: {
                 project: "./tsconfig.json",
@@ -17,7 +19,7 @@ export default tseslint.config(
             },
         },
         rules: {
-            "semi": ["error", "always"],
+            "@typescript-eslint/semi": ["error", "always"],
             "@typescript-eslint/naming-convention": [
                 "error",
                 {
@@ -41,8 +43,15 @@ export default tseslint.config(
                     selector: "variable",
                     format: ["snake_case"],
                 },
+                {
+                    selector: "classProperty",
+                    format: ["UPPER_CASE"],
+                },
+                {
+                    selector: "parameter",
+                    format: ["camelCase"], 
+                }
             ],
         },
-        files: ["src/**/*.ts"],
     }
 );

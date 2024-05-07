@@ -1,10 +1,13 @@
 /**
- * Wikitext parser utility class
+ * WikiText Parser Utility
+ * 
+ * This class provides utility functions to parse WikiText.
  */
 export default class WikiParser {
     /**
-     * Splits the given template into an array of parts.
-     *
+     * Splits the given template into an array of parts. Must not have the {{ or }} at the start and end of the text.
+     * 
+     * @summary Splits the given template into an array of parts.
      * @param text - The text to be split.
      * @returns An array of parts obtained after splitting the text.
      */
@@ -13,46 +16,77 @@ export default class WikiParser {
         let current_part = "";
         let in_link = false;
         let in_template = false;
+        let last_index = 0;
 
-        // Iterate over each character in the text, and split it into parts based on the "|" character, and also handle the "[" and "{" characters.
-        for (let char_num = 0; char_num < text.length; char_num++) {
-            if (text[char_num] == "[" && text[char_num + 1] == "[") {
-                current_part += "[";
-                in_link = true;
-                char_num++;
-            } else if (text[char_num] == "]" && text[char_num + 1] == "]") {
-                current_part += "]";
-                in_link = false;
-                char_num++;
+        // Use a regular expression to match any of the following: [[, ]], {{, }}, |
+        const REGEX = /\[\[|\]\]|\{\{|\}\}|\|/g;
+        let match;
+
+        while ((match = REGEX.exec(text)) !== null) {
+            const [SYMBOL] = match;
+            const INDEX = match.index;
+
+            switch (SYMBOL) {
+                case '[[':
+                    current_part += text.slice(last_index, INDEX) + '[';
+                    in_link = true;
+                    break;
+                case ']]':
+                    current_part += text.slice(last_index, INDEX) + ']';
+                    in_link = false;
+                    break;
+                case '{{':
+                    current_part += text.slice(last_index, INDEX) + '{';
+                    in_template = true;
+                    break;
+                case '}}':
+                    current_part += text.slice(last_index, INDEX) + '}';
+                    in_template = false;
+                    break;
+                case '|':
+                    if (!in_link && !in_template) {
+                        PARTS.push(current_part + text.slice(last_index, INDEX));
+                        current_part = "";
+                    }
+                    break;
             }
-            if (text[char_num] == "{" && text[char_num + 1] == "{") {
-                current_part += "{";
-                in_template = true;
-                char_num++;
-            } else if (text[char_num] == "}" && text[char_num + 1] == "}") {
-                current_part += "}";
-                in_template = false;
-                char_num++;
-            }
-            if (text[char_num] == "|" && !in_link && !in_template) {
-                PARTS.push(current_part);
-                current_part = "";
-            } else {
-                current_part += text[char_num];
-            }
+    
+            last_index = REGEX.lastIndex;
         }
-        PARTS.push(current_part);
+    
+        PARTS.push(current_part + text.slice(last_index));
         return PARTS;
     }
 
     /**
-     * Splits the given template into an array of parts.
+     * Splits the given infobox and returns it's infobox parameters.
      *
      * @param text - The text to be parsed.
-     * @returns _.
+     * @returns Record<string, string> containing the infobox paramaters.
      */
     static parseInfobox(text: string) {
-        const INFOBOX_PARTS: string[] = WikiParser.splitTemplate(text);
-        INFOBOX_PARTS.shift();
+
+        if (text.startsWith(`{{`) && text.endsWith(`}}`)) text = text.slice(2, -2);
+
+        let infobox_array: string[] = WikiParser.splitTemplate(text);
+        infobox_array.shift();
+
+        // Remove part if it doesn't contain an equal sign, leaving only infobox paramters
+        infobox_array = infobox_array.filter(function(part: string) {return part.indexOf("=") != -1;} );
+
+        // Split each infobox parameter into key-value pairs
+        const INFOBOX_DICT: Record<string, string> = infobox_array.reduce(function(acc: Record<string, string>, part: string){
+            const EPARTS = part.split("=");
+            acc[EPARTS[0].trim()] = EPARTS.slice(1).join("=").trim();
+            return acc;
+        },{});
+
+        if (INFOBOX_DICT.image?.startsWith("<gallery")) {
+            // Grab the gallery from the original text
+			const ORIGINAL_GALLERY = text.match(/<gallery.*?>.*?<\/gallery>/sg);
+			if (ORIGINAL_GALLERY) INFOBOX_DICT.image = ORIGINAL_GALLERY[0];
+		}
+
+        return INFOBOX_DICT;
     }
 }

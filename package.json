@@ -1,18 +1,22 @@
 {
-  "name": "rewrite",
-  "version": "1.0.0",
+  "name": "ketchupbot-updater",
+  "version": "3.0.0",
   "description": "",
   "main": "index.ts",
   "types": "index.d.ts",
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsc",
+    "build": "npx tsc",
     "runfrombuild": "node dist/index.js",
-    "run": "tsx src/index.ts"
+    "run": "npx tsx src/index.ts"
   },
   "keywords": [],
-  "author": "",
+  "author": "smallketchup82",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/smallketchup82/ketchupbot-updater/"
+  },
   "license": "ISC",
   "dependencies": {
     "axios": "^1.6.8",
@@ -24,7 +28,10 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.2.0",
+    "@types/node": "^20.12.8",
     "eslint": "^8.57.0",
+    "prettier": "^3.2.5",
+    "tsx": "^4.9.3",
     "typescript": "^5.4.5",
     "typescript-eslint": "^7.8.0"
   }

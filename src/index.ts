@@ -1,7 +1,7 @@
-import chalk from "chalk";
 import fs from "fs/promises";
 import { program } from "commander";
 import { pathToFileURL } from "url";
+import * as Logger from "./Logger.js";
 
 program
     .option("-s, --ships <BOOLEAN>", "Only update ships", false)
@@ -14,9 +14,7 @@ void (async () => {
     console.log((await fs.readFile("banner.txt")).toString());
 
     if (process.env.NODE_ENV !== "production") {
-        console.log(
-            `${chalk.red("[!]")} Running in development mode! Dry run enabled.`,
-        );
+        Logger.log("Running in development mode", Logger.LogLevel.WARN);
     }
 
     // Check if the script is being run directly

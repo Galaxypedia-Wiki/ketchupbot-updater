@@ -64,7 +64,7 @@ export function log(message: string, level: LogLevel = LogLevel.INFO, style?: Lo
     }
 }
 
-async function logToDiscord(message: string): Promise<void> {
+export async function logToDiscord(message: string): Promise<void> {
     if (!process.env.DISCORD_WEBHOOK) throw new Error("No Discord webhook URL provided!");
 
     await axios.post(process.env.DISCORD_WEBHOOK, {

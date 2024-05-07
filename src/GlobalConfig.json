@@ -1,3 +1,10 @@
 {
-    
+   "ship_name_map": {
+        "2018": "2018 Ship",
+        "yname": "Yname (Ship)"
+   },
+   "parameter_exclusions": [
+        "damage_res",
+        "loyalty"
+   ]
 }

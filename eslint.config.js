@@ -8,6 +8,7 @@ export default tseslint.config(
     eslint.configs.recommended,
     ...tseslint.configs.stylisticTypeChecked,
     ...tseslint.configs.recommendedTypeChecked,
+    ...tseslint.configs.strictTypeChecked,
     prettierConfig,
     {
         ignores: ["eslint.config.js"],

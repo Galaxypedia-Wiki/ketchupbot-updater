@@ -4,6 +4,7 @@
         "yname": "Yname (Ship)"
    },
    "parameter_exclusions": [
-        "damage_res"
+        "damage_res",
+        "loyalty"
    ]
 }

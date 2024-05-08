@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/naming-convention */
 import Bot from "nodemw";
-import type { BotOptions } from "nodemw/lib/types.js";
 import { promisify } from "util";
 
 /**
@@ -9,10 +8,6 @@ import { promisify } from "util";
  * Wrapper for the NodeMW library which uses promises instead of callbacks
  */
 export default class NodeMWP extends Bot {
-    constructor(params: string | BotOptions) {
-        super(params);
-    }
-
     public getArticle = promisify(super.getArticle.bind(this));
 
     public edit = promisify(super.edit.bind(this));

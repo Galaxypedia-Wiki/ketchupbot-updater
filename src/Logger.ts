@@ -3,22 +3,22 @@ import axios from "axios";
 
 /**
  * Log Levels
- * 
- * DEBUG: Debugging/verbose messages that should only be logged in development  
- * INFO: Informational messages that should be logged in production  
- * WARN: Warning messages  
- * ERROR: Error messages  
+ *
+ * DEBUG: Debugging/verbose messages that should only be logged in development
+ * INFO: Informational messages that should be logged in production
+ * WARN: Warning messages
+ * ERROR: Error messages
  */
 export enum LogLevel {
     DEBUG,
     INFO,
     WARN,
-    ERROR
+    ERROR,
 }
 
 /**
  * Log Styles
- * 
+ *
  * Typically an appropriate style is chosen based on the log level so you don't need to specify this
  */
 export enum LogStyle {
@@ -35,7 +35,11 @@ export enum LogStyle {
  * @param level The log level. Defaults to LogLevel.INFO
  * @param style The log style. Defaults to an appropriate style based on the log level
  */
-export function log(message: string, level: LogLevel = LogLevel.INFO, style?: LogStyle): void {
+export function log(
+    message: string,
+    level: LogLevel = LogLevel.INFO,
+    style?: LogStyle,
+): void {
     if (!style) {
         switch (level) {
             case LogLevel.ERROR:
@@ -48,27 +52,42 @@ export function log(message: string, level: LogLevel = LogLevel.INFO, style?: Lo
         }
     }
 
+    let final_message = `${style}${message}`;
+    switch (style) {
+        case LogStyle.CHECKMARK:
+            final_message = chalk.green(final_message);
+            break;
+        case LogStyle.PROGRESS:
+            final_message = chalk.blue(final_message);
+            break;
+        case LogStyle.HANG:
+            final_message = chalk.yellow(final_message);
+            break;
+    }
+
     switch (level) {
         case LogLevel.DEBUG:
-            if (process.env.NODE_ENV !== "production") console.log(style + message);
+            if (process.env.NODE_ENV !== "production")
+                console.log(final_message);
             break;
         case LogLevel.INFO:
-            console.log(style + message);
+            console.log(final_message);
             break;
         case LogLevel.WARN:
-            console.warn(chalk.yellowBright(style + message));
+            console.warn(chalk.yellowBright(final_message));
             break;
         case LogLevel.ERROR:
-            console.error(chalk.redBright(style + message));
+            console.error(chalk.redBright(final_message));
             break;
     }
 }
 
 export async function logToDiscord(message: string): Promise<void> {
-    if (!process.env.DISCORD_WEBHOOK) throw new Error("No Discord webhook URL provided!");
+    if (!process.env.DISCORD_WEBHOOK)
+        throw new Error("No Discord webhook URL provided!");
 
     await axios.post(process.env.DISCORD_WEBHOOK, {
-        content: message
+        content: message,
     });
 
     log("Logged message to Discord", LogLevel.DEBUG);

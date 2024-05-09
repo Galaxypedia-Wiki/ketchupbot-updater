@@ -23,12 +23,14 @@ export default class ShipUpdater {
      * @returns
      */
     public async updateShip(ship: string) {
+        Logger.log(`Updating ship: ${ship}`, Logger.LogLevel.INFO, Logger.LogStyle.PROGRESS);
         const FETCHARTICLESTART = performance.now();
         const ARTICLE: string = (await this.BOT.getArticle(ship)) as string;
         const FETCHARTICLEEND = performance.now();
         Logger.log(
             `Fetching article took ${(FETCHARTICLEEND - FETCHARTICLESTART).toFixed(2)}ms`,
             Logger.LogLevel.DEBUG,
+            Logger.LogStyle.CHECKMARK
         );
 
         const INFOBOXPARSESTART = performance.now();
@@ -59,7 +61,7 @@ export default class ShipUpdater {
             Logger.LogLevel.DEBUG,
         );
 
-        Logger.log(Diff.diffStuff(PARSEDINFOBOX, SANITIZEDINFOBOX));
+        Logger.log(Diff.diffData(PARSEDINFOBOX, SANITIZEDINFOBOX));
         return MERGEDINFOBOX;
     }
 }

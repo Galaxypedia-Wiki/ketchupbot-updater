@@ -2,7 +2,7 @@
 import * as diff from "diff";
 import chalk from "chalk";
 
-export function diffStuff(oldobject: object, newobject: object): string {
+export function diffData(oldobject: object, newobject: object): string {
     const DIFFERENCE = diff.diffJson(oldobject, newobject);
     let STRINGS: string[] = [];
     for (const PART of DIFFERENCE) {

@@ -120,7 +120,7 @@ export function mergeData(
         )
             continue;
 
-        OLDDATACLONE[KEY] = newData[KEY];
+        OLDDATACLONE[KEY] = NEWKEYVALUE;
     }
 
     return Object.keys(OLDDATACLONE)

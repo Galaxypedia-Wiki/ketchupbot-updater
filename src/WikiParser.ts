@@ -123,10 +123,7 @@ export function mergeData(
         OLDDATACLONE[KEY] = NEWKEYVALUE;
     }
 
-    return Object.keys(OLDDATACLONE)
-        .sort((a, b) => a.localeCompare(b))
-        .map((key) => ({
-            [key]: OLDDATACLONE[key],
-        }))
-        .reduce((acc, val) => ({ ...acc, ...val }), {});
+    return Object.entries(OLDDATACLONE)
+        .sort(([aKey], [bKey]) => aKey.localeCompare(bKey))
+        .reduce((acc, [key, val]) => ({ ...acc, [key]: val }), {});
 }

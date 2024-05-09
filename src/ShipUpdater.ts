@@ -23,14 +23,18 @@ export default class ShipUpdater {
      * @returns
      */
     public async updateShip(ship: string) {
-        Logger.log(`Updating ship: ${ship}`, Logger.LogLevel.INFO, Logger.LogStyle.PROGRESS);
+        Logger.log(
+            `Updating ship: ${ship}`,
+            Logger.LogLevel.INFO,
+            Logger.LogStyle.PROGRESS,
+        );
         const FETCHARTICLESTART = performance.now();
         const ARTICLE: string = (await this.BOT.getArticle(ship)) as string;
         const FETCHARTICLEEND = performance.now();
         Logger.log(
             `Fetching article took ${(FETCHARTICLEEND - FETCHARTICLESTART).toFixed(2)}ms`,
             Logger.LogLevel.DEBUG,
-            Logger.LogStyle.CHECKMARK
+            Logger.LogStyle.CHECKMARK,
         );
 
         const INFOBOXPARSESTART = performance.now();
@@ -41,6 +45,7 @@ export default class ShipUpdater {
         Logger.log(
             `Parsing infobox took ${(INFOBOXPARSEEND - INFOBOXPARSESTART).toFixed(2)}ms`,
             Logger.LogLevel.DEBUG,
+            Logger.LogStyle.CHECKMARK,
         );
 
         const INFOBOXMERGESTART = performance.now();
@@ -51,6 +56,7 @@ export default class ShipUpdater {
         Logger.log(
             `Merging data took ${(INFOBOXMERGEEND - INFOBOXMERGESTART).toFixed(2)}ms`,
             Logger.LogLevel.DEBUG,
+            Logger.LogStyle.CHECKMARK,
         );
 
         const SANITIZATIONSTART = performance.now();
@@ -59,6 +65,7 @@ export default class ShipUpdater {
         Logger.log(
             `Sanitizing data took ${(SANITIZATIONEND - SANITIZATIONSTART).toFixed(2)}ms`,
             Logger.LogLevel.DEBUG,
+            Logger.LogStyle.CHECKMARK,
         );
 
         Logger.log(Diff.diffData(PARSEDINFOBOX, SANITIZEDINFOBOX));

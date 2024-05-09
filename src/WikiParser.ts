@@ -10,7 +10,7 @@ import GlobalConfig from "./GlobalConfig.json";
  * @param text - The text to be split.
  * @returns An array of parts obtained after splitting the text.
  */
-export function splitTemplate(text: string) {
+export function splitTemplate(text: string): string[] {
     const PARTS: string[] = [];
     let current_part = "";
     let in_link = false;
@@ -107,23 +107,43 @@ export function extractInfobox(text: string): string {
 export function mergeData(
     oldData: Partial<Record<string, string>>,
     newData: Partial<Record<string, string>>,
-) {
+): Record<string, string> {
     // Make a clone of olddata, so we don't modify the original object
     const OLDDATACLONE: Partial<Record<string, string>> = { ...oldData };
 
     for (const KEY in newData) {
-        const NEWKEYVALUE = newData[KEY]?.trim();
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        if (
-            NEWKEYVALUE === "" ||
-            GlobalConfig.parameter_exclusions.includes(KEY)
-        )
-            continue;
+        if (GlobalConfig.parameter_exclusions.includes(KEY)) continue;
 
-        OLDDATACLONE[KEY] = NEWKEYVALUE;
+        OLDDATACLONE[KEY] = newData[KEY];
     }
 
     return Object.entries(OLDDATACLONE)
-        .sort(([aKey], [bKey]) => aKey.localeCompare(bKey))
-        .reduce((acc, [key, val]) => ({ ...acc, [key]: val }), {});
+        .sort(([aKey], [bKey]) => aKey.localeCompare(bKey)) // Sort the entries by key
+        .reduce((acc, [key, val]) => ({ ...acc, [key]: val }), {}); // Convert the entries back into an object
+}
+
+/**
+ * Sanitize data
+ * 
+ * Creates and returns a new sanitized object
+ * @param data
+ */
+export function sanitizeData(data: Record<string, string>): Record<string, string> {
+    const SANITIZED_DATA: Record<string, string> = {};
+
+    for (const [KEY, VALUE] of Object.entries(data)) {
+        const NEWVALUE = VALUE.trim();
+        if (
+            NEWVALUE === "" ||
+            (NEWVALUE.toLowerCase() === "no" &&
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-member-access
+                !GlobalConfig.parameters_to_not_delete_if_value_is_zero.includes(
+                    KEY,
+                ))
+        )
+            continue;
+        SANITIZED_DATA[KEY] = NEWVALUE;
+    }
+
+    return SANITIZED_DATA;
 }

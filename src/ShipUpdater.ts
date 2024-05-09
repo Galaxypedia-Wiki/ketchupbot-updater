@@ -1,6 +1,7 @@
 import type NodeMWP from "./NodeMWP.js";
 import * as Logger from "./Logger.js";
 import * as WikiParser from "./WikiParser.js";
+import * as Diff from "./Diff.js";
 
 /**
  * Ship Updater
@@ -27,7 +28,7 @@ export default class ShipUpdater {
         const FETCHARTICLEEND = performance.now();
         Logger.log(
             `Fetching article took ${(FETCHARTICLEEND - FETCHARTICLESTART).toFixed(2)}ms`,
-            Logger.LogLevel.INFO,
+            Logger.LogLevel.DEBUG,
         );
 
         const INFOBOXPARSESTART = performance.now();
@@ -37,7 +38,7 @@ export default class ShipUpdater {
         const INFOBOXPARSEEND = performance.now();
         Logger.log(
             `Parsing infobox took ${(INFOBOXPARSEEND - INFOBOXPARSESTART).toFixed(2)}ms`,
-            Logger.LogLevel.INFO,
+            Logger.LogLevel.DEBUG,
         );
 
         const INFOBOXMERGESTART = performance.now();
@@ -46,14 +47,19 @@ export default class ShipUpdater {
         });
         const INFOBOXMERGEEND = performance.now();
         Logger.log(
-            JSON.stringify(MERGEDINFOBOX, null, 2),
-            Logger.LogLevel.INFO,
-        );
-        Logger.log(
             `Merging data took ${(INFOBOXMERGEEND - INFOBOXMERGESTART).toFixed(2)}ms`,
-            Logger.LogLevel.INFO,
+            Logger.LogLevel.DEBUG,
         );
 
+        const SANITIZATIONSTART = performance.now();
+        const SANITIZEDINFOBOX = WikiParser.sanitizeData(MERGEDINFOBOX);
+        const SANITIZATIONEND = performance.now();
+        Logger.log(
+            `Sanitizing data took ${(SANITIZATIONEND - SANITIZATIONSTART).toFixed(2)}ms`,
+            Logger.LogLevel.DEBUG,
+        );
+
+        Logger.log(Diff.diffStuff(PARSEDINFOBOX, SANITIZEDINFOBOX));
         return MERGEDINFOBOX;
     }
 }

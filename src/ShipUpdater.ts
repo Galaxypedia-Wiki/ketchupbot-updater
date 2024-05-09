@@ -68,7 +68,8 @@ export default class ShipUpdater {
             Logger.LogStyle.CHECKMARK,
         );
 
-        Logger.log(Diff.diffData(PARSEDINFOBOX, SANITIZEDINFOBOX));
+        console.log(Diff.diffData(PARSEDINFOBOX, SANITIZEDINFOBOX));
+        Logger.log(`Updated ship: ${ship}`, Logger.LogLevel.INFO, Logger.LogStyle.CHECKMARK);
         return MERGEDINFOBOX;
     }
 }

@@ -12,8 +12,6 @@ export default class NodeMWP extends Bot {
 
     public edit = promisify(super.edit.bind(this));
 
-    public parse = promisify(super.parse.bind(this));
-
     public getArticleRevisions = promisify(
         super.getArticleRevisions.bind(this),
     );

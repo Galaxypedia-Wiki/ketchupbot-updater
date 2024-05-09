@@ -1,6 +1,8 @@
 const SHIP_INFOBOX_REGEX =
     /{{\s*Ship[ _]Infobox(?:[^{}]|{{[^{}]*}}|{{{[^{}]*}}})+(?:(?!{{(?:[^{}]|{{[^{}]*}}|{{{[^{}]*}}})*)}})/is;
 
+import GlobalConfig from "./GlobalConfig.json";
+
 /**
  * Splits the given template into an array of parts. Must not have the {{ or }} at the start and end of the text.
  *
@@ -16,7 +18,7 @@ export function splitTemplate(text: string) {
     let last_index = 0;
 
     // Use a regular expression to match any of the following: [[, ]], {{, }}, |
-    const REGEX = /\[\[|\]\]|\{\{|\}\}|\|/g;
+    const REGEX = /\[\[|]]|\{\{|}}|\|/g;
     let match;
 
     while ((match = REGEX.exec(text)) !== null) {
@@ -93,4 +95,38 @@ export function extractInfobox(text: string): string {
     if (!MATCH) throw new Error("No infobox found");
 
     return MATCH[0];
+}
+
+/**
+ * Merge two objects together.
+ *
+ * This function takes newdata and merges it into olddata. If a key in newdata already exists in olddata, the value in olddata will be overwritten. If a key in newdata does not exist in olddata, it will be added.
+ * @param oldData
+ * @param newData
+ */
+export function mergeData(
+    oldData: Partial<Record<string, string>>,
+    newData: Partial<Record<string, string>>,
+) {
+    // Make a clone of olddata, so we don't modify the original object
+    const OLDDATACLONE: Partial<Record<string, string>> = { ...oldData };
+
+    for (const KEY in newData) {
+        const NEWKEYVALUE = newData[KEY]?.trim();
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        if (
+            NEWKEYVALUE === "" ||
+            GlobalConfig.parameter_exclusions.includes(KEY)
+        )
+            continue;
+
+        OLDDATACLONE[KEY] = newData[KEY];
+    }
+
+    return Object.keys(OLDDATACLONE)
+        .sort((a, b) => a.localeCompare(b))
+        .map((key) => ({
+            [key]: OLDDATACLONE[key],
+        }))
+        .reduce((acc, val) => ({ ...acc, ...val }), {});
 }

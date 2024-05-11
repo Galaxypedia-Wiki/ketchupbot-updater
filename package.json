@@ -19,10 +19,12 @@
   },
   "license": "ISC",
   "dependencies": {
+    "@types/diff": "^5.2.1",
     "axios": "^1.6.8",
     "axios-retry": "^4.1.0",
     "chalk": "^4.1.2",
     "commander": "^12.0.0",
+    "diff": "^5.2.0",
     "eslint-config-prettier": "^9.1.0",
     "node-cron": "^3.0.3",
     "nodemw": "^0.21.0"

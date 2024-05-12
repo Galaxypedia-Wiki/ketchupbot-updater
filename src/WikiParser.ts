@@ -1,7 +1,7 @@
 const SHIP_INFOBOX_REGEX =
     /{{\s*Ship[ _]Infobox(?:[^{}]|{{[^{}]*}}|{{{[^{}]*}}})+(?:(?!{{(?:[^{}]|{{[^{}]*}}|{{{[^{}]*}}})*)}})/is;
 
-import GlobalConfig from "./GlobalConfig.json";
+import GlobalConfig from "./GlobalConfig.json" with { type: "json" };
 
 /**
  * Splits the given template into an array of parts. Must not have the {{ or }} at the start and end of the text.
@@ -10,7 +10,7 @@ import GlobalConfig from "./GlobalConfig.json";
  * @param text - The text to be split.
  * @returns An array of parts obtained after splitting the text.
  */
-export function splitTemplate(text: string): string[] {
+function splitTemplate(text: string): string[] {
     const PARTS: string[] = [];
     let current_part = "";
     let in_link = false;
@@ -98,7 +98,7 @@ export function extractInfobox(text: string): string {
 }
 
 /**
- * Merge two objects together.
+ * Merge two objects together, and return the merged object.
  *
  * This function takes newdata and merges it into olddata. If a key in newdata already exists in olddata, the value in olddata will be overwritten. If a key in newdata does not exist in olddata, it will be added.
  * @param oldData
@@ -124,11 +124,13 @@ export function mergeData(
 
 /**
  * Sanitize data
- * 
+ *
  * Creates and returns a new sanitized object
  * @param data
  */
-export function sanitizeData(data: Record<string, string>): Record<string, string> {
+export function sanitizeData(
+    data: Record<string, string>,
+): Record<string, string> {
     const SANITIZED_DATA: Record<string, string> = {};
 
     for (const [KEY, VALUE] of Object.entries(data)) {
@@ -146,4 +148,18 @@ export function sanitizeData(data: Record<string, string>): Record<string, strin
     }
 
     return SANITIZED_DATA;
+}
+
+export function objectToWikitext(data: Record<string, string>): string {
+    return (
+        "{{Ship Infobox\n|" +
+        Object.entries(data)
+            .map(([key, value]) => `${key} = ${value}`)
+            .join("\n|") +
+        "\n}}"
+    );
+}
+
+export function replaceInfobox(text: string, infobox: string): string {
+    return text.replace(SHIP_INFOBOX_REGEX, infobox);
 }

@@ -9,7 +9,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "npx tsc",
     "runfrombuild": "node dist/index.js",
-    "run": "npx tsx src/index.ts"
+    "run": "npx tsx --env-file=.env src/index.ts"
   },
   "keywords": [],
   "author": "smallketchup82",

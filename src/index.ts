@@ -4,6 +4,7 @@ import { pathToFileURL } from "url";
 import * as Logger from "./Logger.js";
 import NodeMWP from "./NodeMWP.js";
 import ShipUpdater from "./ShipUpdater.js";
+import APIManager from "./APIManager.js";
 
 program
     .option("-s, --ships", "Only update ships", false)
@@ -41,5 +42,6 @@ void (async () => {
         );
 
     const SHIPUPDATER = new ShipUpdater(BOT);
-    await SHIPUPDATER.updateShip("Deity");
+    const APIMANAGER = new APIManager();
+    await SHIPUPDATER.updateAll(await APIMANAGER.getShipsData());
 })();

@@ -1,0 +1,11 @@
+services:
+    ketchupbot-discord:
+        image: ghcr.io/smallketchup82/ketchupbot-discord:main   # Change this line
+        container_name: ketchupbot-discord
+        build: .
+        restart: unless-stopped
+        env_file:
+            - path: .env
+              required: false
+        labels:
+          - "com.centurylinklabs.watchtower.enable=true"

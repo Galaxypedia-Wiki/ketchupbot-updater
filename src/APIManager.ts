@@ -1,4 +1,4 @@
-import type ShipData from "./interfaces/ShipData.js";
+import type { ShipData } from "./interfaces/ShipData.js";
 import type TurretData from "./interfaces/TurretData.js";
 import axios from "axios";
 import axiosRetry from "axios-retry";
@@ -15,17 +15,28 @@ export default class APIManager {
     GALAXY_INFO_API: string;
     GALAXY_INFO_TOKEN: string;
 
-    constructor(galaxyInfoAPI: string, galaxyInfoToken: string) {
-        this.GALAXY_INFO_API = galaxyInfoAPI;
-        this.GALAXY_INFO_TOKEN = galaxyInfoToken;
+    constructor(galaxyInfoAPI?: string, galaxyInfoToken?: string) {
+        this.GALAXY_INFO_API =
+            galaxyInfoAPI ?? process.env.GALAXY_INFO_API ?? "";
+        this.GALAXY_INFO_TOKEN =
+            galaxyInfoToken ?? process.env.GALAXY_INFO_TOKEN ?? "";
+
+        if (this.GALAXY_INFO_API === "") {
+            throw new Error("GALAXY_INFO_API is not set");
+        } else if (this.GALAXY_INFO_TOKEN === "") {
+            throw new Error("GALAXY_INFO_TOKEN is not set");
+        }
     }
 
-    public async getShipsData(): Promise<ShipData[]> {
+    public async getShipsData(): Promise<ShipData> {
         const RESPONSE = await axios.get(
             `${this.GALAXY_INFO_API.trim()}/api/v2/galaxypedia?token=${this.GALAXY_INFO_TOKEN.trim()}`,
         );
+        console.log(
+            `${this.GALAXY_INFO_API.trim()}/api/v2/galaxypedia?token=${this.GALAXY_INFO_TOKEN.trim()}`,
+        );
 
-        return RESPONSE.data as ShipData[];
+        return RESPONSE.data as ShipData;
     }
 
     public async getGalaxypediaShipList(): Promise<string[]> {

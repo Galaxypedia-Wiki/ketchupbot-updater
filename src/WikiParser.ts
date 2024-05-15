@@ -1,7 +1,8 @@
+import GlobalConfig from "./GlobalConfig.json" with { type: "json" };
+
 const SHIP_INFOBOX_REGEX =
     /{{\s*Ship[ _]Infobox(?:[^{}]|{{[^{}]*}}|{{{[^{}]*}}})+(?:(?!{{(?:[^{}]|{{[^{}]*}}|{{{[^{}]*}}})*)}})/is;
-
-import GlobalConfig from "./GlobalConfig.json" with { type: "json" };
+const TURRET_TABLE_REGEX = /{\|\s*class="wikitable sortable".*?\|}/sig
 
 /**
  * Splits the given template into an array of parts. Must not have the {{ or }} at the start and end of the text.
@@ -162,4 +163,12 @@ export function objectToWikitext(data: Record<string, string>): string {
 
 export function replaceInfobox(text: string, infobox: string): string {
     return text.replace(SHIP_INFOBOX_REGEX, infobox);
+}
+
+export function extractTurretTables(text: string): RegExpMatchArray {
+    const TURRETTABLES = text.match(TURRET_TABLE_REGEX);
+    if (!TURRETTABLES) throw new Error("No turret tables found on the page.");
+    if (TURRETTABLES.length > 6) throw new Error("Irregular number of tables found on the Turrets page. Please ensure that the number of tables stays at 6 or below.")
+    
+    return TURRETTABLES;
 }

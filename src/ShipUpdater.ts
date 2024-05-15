@@ -136,6 +136,15 @@ export default class ShipUpdater {
             ARTICLE,
             WikiParser.objectToWikitext(SANITIZEDINFOBOX),
         );
+        
+        if (ARTICLE === NEWWIKITEXT) {
+            Logger.log(
+                `No changes detected for ship: ${ship}`,
+                Logger.LogLevel.INFO,
+                Logger.LogStyle.CHECKMARK,
+            );
+            return;
+        }
 
         try {
             await this.BOT.edit(ship, NEWWIKITEXT, "Automated edit");

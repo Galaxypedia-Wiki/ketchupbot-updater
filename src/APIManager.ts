@@ -21,11 +21,10 @@ export default class APIManager {
         this.GALAXY_INFO_TOKEN =
             galaxyInfoToken ?? process.env.GALAXY_INFO_TOKEN ?? "";
 
-        if (this.GALAXY_INFO_API === "") {
+        if (this.GALAXY_INFO_API === "")
             throw new Error("GALAXY_INFO_API is not set");
-        } else if (this.GALAXY_INFO_TOKEN === "") {
+        if (this.GALAXY_INFO_TOKEN === "")
             throw new Error("GALAXY_INFO_TOKEN is not set");
-        }
     }
 
     public async getShipsData(): Promise<ShipData> {

@@ -4,8 +4,6 @@ const SHIP_INFOBOX_REGEX =
     /{{\s*Ship[ _]Infobox(?:[^{}]|{{[^{}]*}}|{{{[^{}]*}}})+(?:(?!{{(?:[^{}]|{{[^{}]*}}|{{{[^{}]*}}})*)}})/is;
 const TURRET_TABLE_REGEX = /{\|\s*class="wikitable sortable".*?\|}/gis;
 
-import * as Logger from "./Logger.js";
-
 /**
  * Splits the given template into an array of parts. Must not have the {{ or }} at the start and end of the text.
  *

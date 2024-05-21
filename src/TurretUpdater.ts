@@ -6,7 +6,7 @@ import * as Logger from "./Logger.js";
 
 /**
  * Turret Updater
- * 
+ *
  * This is the class that is responsible for facilitating the updating of the turret page.
  */
 export default class TurretUpdater {
@@ -22,7 +22,8 @@ export default class TurretUpdater {
             "Turrets",
         )) as string;
         let new_turret_page_wikitext = TURRETPAGEWIKITEXT;
-        const TURRETTABLES = WikiParser.extractTurretTables(TURRETPAGEWIKITEXT);
+        const TURRETTABLES: RegExpMatchArray =
+            WikiParser.extractTurretTables(TURRETPAGEWIKITEXT);
 
         for (const [INDEX, TABLE] of TURRETTABLES.entries()) {
             const TABLESPLIT = TABLE.split("|-");
@@ -39,7 +40,7 @@ export default class TurretUpdater {
             );
 
             const TURRETSPARSED = RELEVANTTURRETS.map(([, turret]) => {
-                return `\n| ${turret.Name}\n| ${turret.Size}\n| ${turret.BaseAccuracy.toFixed(4)}| ${turret.Damage.toFixed()}\n| ${turret.Range.toFixed()}\n| ${turret.Reload.toFixed(2)}\n| ${turret.SpeedDenominator.toFixed()}\n| ${turret.DPS.toFixed(2)}`;
+                return `\n| ${turret.Name}\n| ${turret.Size}\n| ${turret.BaseAccuracy.toFixed(4)}\n| ${turret.Damage.toFixed()}\n| ${turret.Range.toFixed()}\n| ${turret.Reload.toFixed(2)}\n| ${turret.SpeedDenominator.toFixed()}\n| ${turret.DPS.toFixed(2)}`;
             });
 
             const NEWTABLE = `${TABLESPLIT[0].trim()}\n|-\n${TURRETSPARSED.join("\n|-").trim()}\n|}`;
@@ -52,8 +53,16 @@ export default class TurretUpdater {
 
         if (new_turret_page_wikitext === TURRETPAGEWIKITEXT)
             throw new Error("Turrets page is up to date!");
-        
-        await this.BOT.edit("Turrets", new_turret_page_wikitext, "Automatic Turret Data Update");
-        Logger.log("Updated Turrets page", Logger.LogLevel.INFO, Logger.LogStyle.CHECKMARK);
+
+        await this.BOT.edit(
+            "Turrets",
+            new_turret_page_wikitext,
+            "Automatic Turret Data Update",
+        );
+        Logger.log(
+            "Updated Turrets page",
+            Logger.LogLevel.INFO,
+            Logger.LogStyle.CHECKMARK,
+        );
     }
 }

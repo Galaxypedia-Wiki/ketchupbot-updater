@@ -19,14 +19,14 @@ export default class ShipUpdater {
     }
 
     public async updateAll(data?: ShipData): Promise<void> {
-        if (!data) data = await(new APIManager()).getShipsData();
+        if (!data) data = await new APIManager().getShipsData();
 
         for (const SHIP of Object.keys(data)) {
             try {
                 const UPDATESTART = performance.now();
                 await this.updateShip(SHIP, data[SHIP]);
                 const UPDATEEND = performance.now();
-                
+
                 Logger.log(
                     `Updated ship: ${this.getShipName(SHIP)} in ${(UPDATEEND - UPDATESTART).toFixed(2)}ms`,
                     Logger.LogLevel.INFO,
@@ -48,8 +48,10 @@ export default class ShipUpdater {
     }
 
     private getShipName(ship: SingleShipData | string): string {
-        // @ts-ignore Compiler yells for some reason. We know this is safe (I hope)
-        const MAPPEDNAME = GlobalConfig.ship_name_map[typeof ship === "string" ? ship : ship.title];
+        // @ts-expect-error Compiler yells for some reason. We know this is safe (I hope)
+        const MAPPEDNAME = GlobalConfig.ship_name_map[
+            typeof ship === "string" ? ship : ship.title
+        ] as string | undefined;
         return MAPPEDNAME ?? (typeof ship === "string" ? ship : ship.title);
     }
 
@@ -61,12 +63,15 @@ export default class ShipUpdater {
      * @param data The data to update the ship with. If not provided, the data will be fetched from the API
      * @returns
      */
-    public async updateShip(ship: string, data?: SingleShipData): Promise<void> {
+    public async updateShip(
+        ship: string,
+        data?: SingleShipData,
+    ): Promise<void> {
         if (!data) {
             const APIMANAGER = new APIManager();
 
             const SHIPSTATS: ShipData = await APIMANAGER.getShipsData();
-            const SHIPDATA = (Object.keys(SHIPSTATS) as Array<string>).find(
+            const SHIPDATA = Object.keys(SHIPSTATS).find(
                 (shipData) => shipData === ship,
             );
             if (!SHIPDATA) {
@@ -95,6 +100,12 @@ export default class ShipUpdater {
 
         if (!ARTICLE) throw new Error(`Failed to fetch article: ${ship}`);
 
+        if (
+            ARTICLE.toLowerCase().match(/<!--\s*ketchupbot-ignore\s*-->/gim) !==
+            null
+        )
+            throw new Error("Found ignore flag on the page. Skipping update");
+
         const INFOBOXPARSESTART = performance.now();
         const PARSEDINFOBOX = WikiParser.parseInfobox(
             WikiParser.extractInfobox(ARTICLE),
@@ -109,11 +120,14 @@ export default class ShipUpdater {
         // convert data into a Partial<Record<string, string>>
         const DATA: Partial<Record<string, string>> = {};
         for (const [KEY, VALUE] of Object.entries(data)) {
-            DATA[KEY] = VALUE.toString();
+            DATA[KEY] = (VALUE as string).toString();
         }
 
         const INFOBOXMERGESTART = performance.now();
-        const MERGEDINFOBOX = WikiParser.mergeData(PARSEDINFOBOX, DATA);
+        const [MERGEDINFOBOX, UPDATED_PARAMETERS] = WikiParser.mergeData(
+            PARSEDINFOBOX,
+            DATA,
+        );
         const INFOBOXMERGEEND = performance.now();
         Logger.log(
             `Merging data took ${(INFOBOXMERGEEND - INFOBOXMERGESTART).toFixed(2)}ms`,
@@ -122,7 +136,8 @@ export default class ShipUpdater {
         );
 
         const SANITIZATIONSTART = performance.now();
-        const SANITIZEDINFOBOX = WikiParser.sanitizeData(MERGEDINFOBOX);
+        const [SANITIZEDINFOBOX, REMOVEDPARAMETERS] =
+            WikiParser.sanitizeData(MERGEDINFOBOX);
         const SANITIZATIONEND = performance.now();
         Logger.log(
             `Sanitizing data took ${(SANITIZATIONEND - SANITIZATIONSTART).toFixed(2)}ms`,
@@ -130,13 +145,19 @@ export default class ShipUpdater {
             Logger.LogStyle.CHECKMARK,
         );
 
-        console.log(Diff.diffData(PARSEDINFOBOX, SANITIZEDINFOBOX));
-
+        const WIKITEXTCONSTRUCTIONSTART = performance.now();
         const NEWWIKITEXT = WikiParser.replaceInfobox(
             ARTICLE,
             WikiParser.objectToWikitext(SANITIZEDINFOBOX),
         );
-        
+        const WIKITEXTCONSTRUCTIONEND = performance.now();
+
+        Logger.log(
+            `Constructing new wikitext took ${(WIKITEXTCONSTRUCTIONEND - WIKITEXTCONSTRUCTIONSTART).toFixed(2)}ms`,
+            Logger.LogLevel.DEBUG,
+            Logger.LogStyle.CHECKMARK,
+        );
+
         if (ARTICLE === NEWWIKITEXT) {
             Logger.log(
                 `No changes detected for ship: ${ship}`,
@@ -146,8 +167,20 @@ export default class ShipUpdater {
             return;
         }
 
+        console.log(Diff.diffData(PARSEDINFOBOX, SANITIZEDINFOBOX));
+
         try {
-            await this.BOT.edit(ship, NEWWIKITEXT, "Automated edit");
+            await this.BOT.edit(
+                ship,
+                NEWWIKITEXT,
+                "Automatic Update" +
+                    (REMOVEDPARAMETERS.length > 0
+                        ? ` | Removed parameters: ${REMOVEDPARAMETERS.join(", ")}`
+                        : "") +
+                    (UPDATED_PARAMETERS.length > 0
+                        ? ` | Updated parameters: ${UPDATED_PARAMETERS.join(", ")}`
+                        : ""),
+            );
         } catch (error) {
             Logger.log(
                 `Failed to edit ${ship}:\n${(error as Error).stack ?? (error as Error).message}`,

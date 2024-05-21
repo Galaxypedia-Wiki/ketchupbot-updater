@@ -2,7 +2,9 @@ import GlobalConfig from "./GlobalConfig.json" with { type: "json" };
 
 const SHIP_INFOBOX_REGEX =
     /{{\s*Ship[ _]Infobox(?:[^{}]|{{[^{}]*}}|{{{[^{}]*}}})+(?:(?!{{(?:[^{}]|{{[^{}]*}}|{{{[^{}]*}}})*)}})/is;
-const TURRET_TABLE_REGEX = /{\|\s*class="wikitable sortable".*?\|}/sig
+const TURRET_TABLE_REGEX = /{\|\s*class="wikitable sortable".*?\|}/gis;
+
+import * as Logger from "./Logger.js";
 
 /**
  * Splits the given template into an array of parts. Must not have the {{ or }} at the start and end of the text.
@@ -23,24 +25,24 @@ function splitTemplate(text: string): string[] {
     let match;
 
     while ((match = REGEX.exec(text)) !== null) {
-        const [SYMBOL] = match;
+        const SYMBOL = match[0];
         const INDEX = match.index;
 
         switch (SYMBOL) {
             case "[[":
-                current_part += text.slice(last_index, INDEX) + "[";
+                current_part += text.slice(last_index, INDEX) + "[[";
                 in_link = true;
                 break;
             case "]]":
-                current_part += text.slice(last_index, INDEX) + "]";
+                current_part += text.slice(last_index, INDEX) + "]]";
                 in_link = false;
                 break;
             case "{{":
-                current_part += text.slice(last_index, INDEX) + "{";
+                current_part += text.slice(last_index, INDEX) + "{{";
                 in_template = true;
                 break;
             case "}}":
-                current_part += text.slice(last_index, INDEX) + "}";
+                current_part += text.slice(last_index, INDEX) + "}}";
                 in_template = false;
                 break;
             case "|":
@@ -108,19 +110,25 @@ export function extractInfobox(text: string): string {
 export function mergeData(
     oldData: Partial<Record<string, string>>,
     newData: Partial<Record<string, string>>,
-): Record<string, string> {
+): [Record<string, string>, string[]] {
     // Make a clone of olddata, so we don't modify the original object
     const OLDDATACLONE: Partial<Record<string, string>> = { ...oldData };
+
+    const UPDATED_PARAMETERS: string[] = [];
 
     for (const KEY in newData) {
         if (GlobalConfig.parameter_exclusions.includes(KEY)) continue;
 
         OLDDATACLONE[KEY] = newData[KEY];
+        if (OLDDATACLONE[KEY] !== oldData[KEY]) UPDATED_PARAMETERS.push(KEY);
     }
 
-    return Object.entries(OLDDATACLONE)
-        .sort(([aKey], [bKey]) => aKey.localeCompare(bKey)) // Sort the entries by key
-        .reduce((acc, [key, val]) => ({ ...acc, [key]: val }), {}); // Convert the entries back into an object
+    return [
+        Object.entries(OLDDATACLONE)
+            .sort(([aKey], [bKey]) => aKey.localeCompare(bKey)) // Sort the entries by key
+            .reduce((acc, [key, val]) => ({ ...acc, [key]: val }), {}), // Convert the entries back into an object
+        UPDATED_PARAMETERS,
+    ]; 
 }
 
 /**
@@ -131,8 +139,9 @@ export function mergeData(
  */
 export function sanitizeData(
     data: Record<string, string>,
-): Record<string, string> {
+): [Record<string, string>, string[]] {
     const SANITIZED_DATA: Record<string, string> = {};
+    const REMOVED_PARAMETERS: string[] = [];
 
     for (const [KEY, VALUE] of Object.entries(data)) {
         const NEWVALUE = VALUE.trim();
@@ -140,15 +149,20 @@ export function sanitizeData(
             NEWVALUE === "" ||
             (NEWVALUE.toLowerCase() === "no" &&
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-member-access
-                !GlobalConfig.parameters_to_not_delete_if_value_is_zero.includes(
+                !GlobalConfig.parameters_to_not_delete_if_value_is_no.includes(
                     KEY,
-                ))
-        )
+                )) ||
+            (NEWVALUE.toLowerCase() === "yes" &&
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access,@typescript-eslint/no-unsafe-call
+                GlobalConfig.parameters_to_delete_if_value_is_yes.includes(KEY))
+        ) {
+            REMOVED_PARAMETERS.push(KEY);
             continue;
+        }
         SANITIZED_DATA[KEY] = NEWVALUE;
     }
 
-    return SANITIZED_DATA;
+    return [SANITIZED_DATA, REMOVED_PARAMETERS];
 }
 
 export function objectToWikitext(data: Record<string, string>): string {
@@ -168,7 +182,10 @@ export function replaceInfobox(text: string, infobox: string): string {
 export function extractTurretTables(text: string): RegExpMatchArray {
     const TURRETTABLES = text.match(TURRET_TABLE_REGEX);
     if (!TURRETTABLES) throw new Error("No turret tables found on the page.");
-    if (TURRETTABLES.length > 6) throw new Error("Irregular number of tables found on the Turrets page. Please ensure that the number of tables stays at 6 or below.")
-    
+    if (TURRETTABLES.length > 6)
+        throw new Error(
+            "Irregular number of tables found on the Turrets page. Please ensure that the number of tables stays at 6 or below.",
+        );
+
     return TURRETTABLES;
 }

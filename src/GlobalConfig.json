@@ -4,5 +4,6 @@
         "yname": "Yname (Ship)"
     },
     "parameter_exclusions": ["damage_res", "loyalty"],
-    "parameters_to_not_delete_if_value_is_zero": [""]
+    "parameters_to_not_delete_if_value_is_no": [""],
+    "parameters_to_delete_if_value_is_yes": ["warp_drive"]
 }

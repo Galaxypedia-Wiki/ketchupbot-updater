@@ -1,5 +1,5 @@
 import type { ShipData } from "./interfaces/ShipData.js";
-import type TurretData from "./interfaces/TurretData.js";
+import type { TurretData } from "./interfaces/TurretData.js";
 import axios from "axios";
 import axiosRetry from "axios-retry";
 
@@ -57,13 +57,13 @@ export default class APIManager {
             .filter((pageName) => !pageName.startsWith("Category:"));
     }
 
-    public async getTurretData(): Promise<TurretData[]> {
+    public async getTurretData(): Promise<TurretData> {
         const RESPONSE = await axios.get(
             `${this.GALAXY_INFO_API.trim()}/api/v2/ships-turrets/raw`,
         );
 
         const RESPONSE_DATA = RESPONSE.data as {
-            serializedTurrets: TurretData[];
+            serializedTurrets: TurretData;
         };
 
         return RESPONSE_DATA.serializedTurrets;

@@ -117,8 +117,8 @@ void (async () => {
 
     //region Scheduler logic
     if (OPTIONS.shipSchedule || OPTIONS.turretSchedule) {
+        Logger.log("Running in scheduler mode", Logger.LogLevel.INFO);
         scheduler = new Scheduler(APIMANAGER, SHIPUPDATER, TURRETUPDATER);
-        Logger.log("Running in scheduler mode", Logger.LogLevel.INFO)
     }
 
     if (OPTIONS.shipSchedule && scheduler)

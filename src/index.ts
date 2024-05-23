@@ -116,8 +116,10 @@ void (async () => {
     let scheduler: Scheduler | null = null;
 
     //region Scheduler logic
-    if (OPTIONS.shipSchedule || OPTIONS.turretSchedule)
+    if (OPTIONS.shipSchedule || OPTIONS.turretSchedule) {
         scheduler = new Scheduler(APIMANAGER, SHIPUPDATER, TURRETUPDATER);
+        Logger.log("Running in scheduler mode", Logger.LogLevel.INFO)
+    }
 
     if (OPTIONS.shipSchedule && scheduler)
         // eslint-disable-next-line @typescript-eslint/no-unsafe-argument

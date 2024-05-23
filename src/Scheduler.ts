@@ -2,6 +2,7 @@ import cron from "node-cron";
 import type APIManager from "./APIManager.js";
 import type ShipUpdater from "./ShipUpdater.js";
 import type TurretUpdater from "./TurretUpdater.js";
+import * as Logger from "./Logger.js";
 
 /**
  * Scheduler
@@ -27,6 +28,7 @@ export default class Scheduler {
         
         if (runOnceAtStart) {
             void (async () => {
+                Logger.log("Running initial update", Logger.LogLevel.INFO);
                 await shipUpdater.updateAll(
                     await apiManager.getShipsData(),
                 );

@@ -128,7 +128,7 @@ void (async () => {
         scheduler.startTurretScheduler(OPTIONS.turretSchedule);
 
     // Return if we're running in scheduler mode as we don't want to run the update code below
-    if (scheduler) return;
+    if (scheduler !== null) return;
     //endregion
 
     if (

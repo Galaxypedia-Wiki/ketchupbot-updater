@@ -1,6 +1,6 @@
 services:
-    ketchupbot-discord:
-        image: ghcr.io/smallketchup82/ketchupbot-discord:main   # Change this line
+    ketchupbot-updater:
+        image: ghcr.io/smallketchup82/ketchupbot-updater:main
         container_name: ketchupbot-updater
         build: .
         restart: unless-stopped

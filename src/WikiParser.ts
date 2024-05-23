@@ -46,6 +46,8 @@ function splitTemplate(text: string): string[] {
                 if (!in_link && !in_template) {
                     PARTS.push(current_part + text.slice(last_index, INDEX));
                     current_part = "";
+                } else {
+                    current_part += text.slice(last_index, INDEX) + "|";
                 }
                 break;
         }

@@ -14,6 +14,7 @@ function commaSeparatedList(value: string, dummyPrevious: unknown) {
     return value.split(",").map((v) => v.trim());
 }
 
+//region CLI Initialization
 program.version(version);
 program
     .option(
@@ -58,6 +59,7 @@ program
 program.parse();
 const OPTIONS = program.opts();
 console.log(JSON.stringify(OPTIONS, null, 2));
+//endregion
 
 void (async () => {
     // Check if the script is being run directly
@@ -66,6 +68,7 @@ void (async () => {
     console.log((await fs.readFile("banner.txt")).toString());
     console.log(`ketchupbot-updater | v${version} | ${new Date().toUTCString()}\n`);
 
+    //region Environment Variable Initialization
     if (process.env.NODE_ENV !== "production") {
         Logger.log("Running in development mode", Logger.LogLevel.WARN);
         if (OPTIONS.dryRun === undefined) OPTIONS.dryRun = true;
@@ -74,7 +77,9 @@ void (async () => {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     if (OPTIONS.dryRun !== undefined)
         process.env.DRY_RUN = OPTIONS.dryRun ? "1" : "0";
+    //endregion
 
+    //region NodeMW Initialization
     const BOT = new NodeMWP({
         protocol: process.env.NODEMW_PROTOCOL ?? "https",
         server: process.env.NODEMW_SERVER ?? "robloxgalaxy.wiki",
@@ -91,12 +96,14 @@ void (async () => {
             "No login credentials provided. NodeMW will now be read-only",
             Logger.LogLevel.WARN,
         );
+    //endregion
 
     const APIMANAGER = new APIManager();
     const SHIPUPDATER = new ShipUpdater(BOT);
     const TURRETUPDATER = new TurretUpdater(BOT);
     let scheduler: Scheduler | null = null;
-    
+
+    //region Scheduler logic
     if (OPTIONS.shipSchedule || OPTIONS.turretSchedule)
         scheduler = new Scheduler(APIMANAGER, SHIPUPDATER, TURRETUPDATER);
 
@@ -110,6 +117,7 @@ void (async () => {
     
     // Return if we're running in scheduler mode as we don't want to run the update code below
     if (scheduler) return;
+    //endregion
 
     if (
         (typeof OPTIONS.ships === "string" &&

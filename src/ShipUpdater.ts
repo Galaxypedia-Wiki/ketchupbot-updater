@@ -4,7 +4,7 @@ import * as WikiParser from "./WikiParser.js";
 import * as Diff from "./Diff.js";
 import type { ShipData, SingleShipData } from "./interfaces/ShipData.js";
 import APIManager from "./APIManager.js";
-import GlobalConfig from "./GlobalConfig.json" with { type: "json" };
+import GlobalConfig from "./assets/GlobalConfig.json" with { type: "json" };
 
 /**
  * Ship Updater

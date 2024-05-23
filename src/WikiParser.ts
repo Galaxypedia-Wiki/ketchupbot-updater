@@ -1,4 +1,4 @@
-import GlobalConfig from "./GlobalConfig.json" with { type: "json" };
+import GlobalConfig from "./assets/GlobalConfig.json" with { type: "json" };
 
 const SHIP_INFOBOX_REGEX =
     /{{\s*Ship[ _]Infobox(?:[^{}]|{{[^{}]*}}|{{{[^{}]*}}})+(?:(?!{{(?:[^{}]|{{[^{}]*}}|{{{[^{}]*}}})*)}})/is;

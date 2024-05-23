@@ -6,16 +6,21 @@ import NodeMWP from "./NodeMWP.js";
 import ShipUpdater from "./ShipUpdater.js";
 import APIManager from "./APIManager.js";
 import TurretUpdater from "./TurretUpdater.js";
-import { version } from "../package.json";
+import packageJson from "../package.json" with { type: "json" };
 import Scheduler from "./Scheduler.js";
+import path from "path";
+import { fileURLToPath } from "url";
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 function commaSeparatedList(value: string, dummyPrevious: unknown) {
     return value.split(",").map((v) => v.trim());
 }
+export const VERSION = packageJson.version;
+const FILENAME = fileURLToPath(import.meta.url);
+const DIRNAME = path.dirname(FILENAME);
 
 //region CLI Initialization
-program.version(version);
+program.version(VERSION);
 program
     .option(
         "-s, --ships <string>",
@@ -23,7 +28,7 @@ program
         commaSeparatedList,
         "all",
     )
-    .option("-t, --turrets <boolean>", "Update turrets?", true)
+    .option("-t, --turrets", "Update turrets?", true)
     .option(
         "-mu, --username <string>, --mediawikiusername <string>",
         "Username for logging in to the wiki. This takes precedence over process.env.NODEMW_USERNAME",
@@ -42,16 +47,16 @@ program
     )
     .option(
         "-ss, --ship-schedule [string]",
-        "Pass to enable ship scheduler. Will ignore ships option.",
+        "Pass to enable ship scheduler. Will ignore ships option. This takes precedence over process.env.SHIP_SCHEDULE",
         undefined,
     )
     .option(
         "-ts, --turret-schedule [string]",
-        "Pass to enable turret scheduler. Will ignore turrets option.",
+        "Pass to enable turret scheduler. Will ignore turrets option. This takes precedence over process.env.TURRET_SCHEDULE",
         undefined,
     )
     .option(
-        "--dry-run <boolean>",
+        "--dry-run",
         "Run the script in dry-run mode. Defaults to true if running with development configuration",
         undefined,
     );
@@ -65,8 +70,14 @@ void (async () => {
     // Check if the script is being run directly
     if (import.meta.url !== pathToFileURL(process.argv[1]).href) return;
 
-    console.log((await fs.readFile("banner.txt")).toString());
-    console.log(`ketchupbot-updater | v${version} | ${new Date().toUTCString()}\n`);
+    console.log(
+        (
+            await fs.readFile(path.join(DIRNAME, "assets", "banner.txt"))
+        ).toString(),
+    );
+    console.log(
+        `ketchupbot-updater | v${VERSION} | ${new Date().toUTCString()}\n`,
+    );
 
     //region Environment Variable Initialization
     if (process.env.NODE_ENV !== "production") {
@@ -114,7 +125,7 @@ void (async () => {
     if (OPTIONS.turretSchedule && scheduler)
         // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
         scheduler.startTurretScheduler(OPTIONS.turretSchedule);
-    
+
     // Return if we're running in scheduler mode as we don't want to run the update code below
     if (scheduler) return;
     //endregion

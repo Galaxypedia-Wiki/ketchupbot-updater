@@ -29,13 +29,35 @@ export default class Scheduler {
         if (runOnceAtStart) {
             void (async () => {
                 Logger.log("Running initial update", Logger.LogLevel.INFO);
-                await shipUpdater.updateAll(
-                    await apiManager.getShipsData(),
-                );
-                await turretUpdater.updateTurrets(
-                    await apiManager.getTurretData(),
-                );
+                await this.updateShips();
+                await this.updateTurrets();
             })();
+        }
+    }
+    
+    private async updateShips(): Promise<void> {
+        try {
+            await this.SHIPUPDATER.updateAll(
+                await this.APIMANAGER.getShipsData(),
+            );
+        } catch (error) {
+            Logger.log(
+                `Failed to update ships\n${(error as Error).stack ?? (error as Error).message}`,
+                Logger.LogLevel.ERROR,
+            );
+        }
+    }
+    
+    private async updateTurrets(): Promise<void> {
+        try {
+            await this.TURRETUPDATER.updateTurrets(
+                await this.APIMANAGER.getTurretData(),
+            );
+        } catch (error) {
+            Logger.log(
+                `Failed to update turrets\n${(error as Error).stack ?? (error as Error).message}`,
+                Logger.LogLevel.ERROR,
+            );
         }
     }
 
@@ -45,9 +67,7 @@ export default class Scheduler {
 
         this.SHIPSCHEDULERTASK = cron.schedule(shipSchedule, () => {
             void (async () => {
-                await this.SHIPUPDATER.updateAll(
-                    await this.APIMANAGER.getShipsData(),
-                );
+                await this.updateShips();
             })();
         });
     }
@@ -58,9 +78,7 @@ export default class Scheduler {
 
         this.TURRETSCHEDULERTASK = cron.schedule(turretSchedule, () => {
             void (async () => {
-                await this.TURRETUPDATER.updateTurrets(
-                    await this.APIMANAGER.getTurretData(),
-                );
+                await this.updateTurrets();
             })();
         });
     }

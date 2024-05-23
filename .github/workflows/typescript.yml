@@ -5,9 +5,9 @@ name: Typescript Build CI
 
 on:
   push:
-    branches: [ "rewrite" ]
+    branches: [ "main" ]
   pull_request:
-    branches: [ "rewrite" ]
+    branches: [ "main" ]
 
 jobs:
   build:

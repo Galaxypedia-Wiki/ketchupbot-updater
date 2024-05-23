@@ -9,7 +9,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc && copyfiles -f src/**/*.txt dist/src/assets",
     "runfrombuild": "node dist/src/index.js",
-    "run": "npx tsx --env-file=.env src/index.ts"
+    "run": "npx tsx src/index.ts"
   },
   "keywords": [],
   "author": "smallketchup82",
@@ -26,6 +26,7 @@
     "chalk": "^4.1.2",
     "commander": "^12.0.0",
     "diff": "^5.2.0",
+    "dotenv": "^16.4.5",
     "eslint-config-prettier": "^9.1.0",
     "node-cron": "^3.0.3",
     "nodemw": "^0.21.0"

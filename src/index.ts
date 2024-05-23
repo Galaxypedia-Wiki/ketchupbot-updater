@@ -10,6 +10,7 @@ import packageJson from "../package.json" with { type: "json" };
 import Scheduler from "./Scheduler.js";
 import path from "path";
 import { fileURLToPath } from "url";
+import 'dotenv/config';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 function commaSeparatedList(value: string, dummyPrevious: unknown) {

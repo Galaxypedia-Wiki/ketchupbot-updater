@@ -19,10 +19,22 @@ export default class Scheduler {
         apiManager: APIManager,
         shipUpdater: ShipUpdater,
         turretUpdater: TurretUpdater,
+        runOnceAtStart = true
     ) {
         this.APIMANAGER = apiManager;
         this.SHIPUPDATER = shipUpdater;
         this.TURRETUPDATER = turretUpdater;
+        
+        if (runOnceAtStart) {
+            void (async () => {
+                await shipUpdater.updateAll(
+                    await apiManager.getShipsData(),
+                );
+                await turretUpdater.updateTurrets(
+                    await apiManager.getTurretData(),
+                );
+            })();
+        }
     }
 
     startShipScheduler(shipSchedule: string): void {

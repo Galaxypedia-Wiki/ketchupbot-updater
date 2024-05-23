@@ -1,5 +1,4 @@
 import GlobalConfig from "./assets/GlobalConfig.json" with { type: "json" };
-
 const SHIP_INFOBOX_REGEX =
     /{{\s*Ship[ _]Infobox(?:[^{}]|{{[^{}]*}}|{{{[^{}]*}}})+(?:(?!{{(?:[^{}]|{{[^{}]*}}|{{{[^{}]*}}})*)}})/is;
 const TURRET_TABLE_REGEX = /{\|\s*class="wikitable sortable".*?\|}/gis;

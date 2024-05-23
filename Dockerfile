@@ -13,4 +13,4 @@ COPY package*.json .
 COPY src/assets/banner.txt .
 RUN npm ci
 COPY --from=0 /app/dist ./dist
-CMD ["npm", "run", "runfrombuild", "-- --ships all", "--turrets true", "--ship-schedule \"0 * * * *\"", "--turret-schedule \"30 * * * *\""]
+CMD npm run runfrombuild -- --ships all --turrets --ship-schedule "0 * * * *" --turret-schedule "30 * * * *"

@@ -167,7 +167,7 @@ export default class ShipUpdater {
             return;
         }
 
-        console.log(Diff.diffData(PARSEDINFOBOX, SANITIZEDINFOBOX));
+        if (process.env.NODE_ENV !== "production") console.log(Diff.diffData(PARSEDINFOBOX, SANITIZEDINFOBOX));
 
         try {
             await this.BOT.edit(

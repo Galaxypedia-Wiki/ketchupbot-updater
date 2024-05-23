@@ -29,7 +29,7 @@ program
         commaSeparatedList,
         "all",
     )
-    .option("-t, --turrets", "Update turrets?", true)
+    .option("-t, --turrets [boolean]", "Update turrets?", true)
     .option(
         "-mu, --username <string>, --mediawikiusername <string>",
         "Username for logging in to the wiki. This takes precedence over process.env.NODEMW_USERNAME",

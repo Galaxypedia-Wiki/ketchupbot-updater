@@ -81,7 +81,7 @@ export function parseInfobox(text: string): Partial<Record<string, string>> {
 
     if (INFOBOX_KEYPAIRS.image?.startsWith("<gallery")) {
         // Grab the gallery from the original text
-        const ORIGINAL_GALLERY = text.match(/<gallery.*?>.*?<\/gallery>/gs);
+        const ORIGINAL_GALLERY = text.match(/<gallery.*?>.*?<\/?gallery>/gs);
         if (!ORIGINAL_GALLERY)
             throw new Error(
                 "Gallery found in infobox but unable to extract it",

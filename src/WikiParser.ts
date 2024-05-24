@@ -143,22 +143,24 @@ export function sanitizeData(
     const REMOVED_PARAMETERS: string[] = [];
 
     for (const [KEY, VALUE] of Object.entries(data)) {
-        const NEWVALUE = VALUE.trim();
+        let new_value = VALUE.trim();
         if (
-            NEWVALUE === "" ||
-            (NEWVALUE.toLowerCase() === "no" &&
+            new_value === "" ||
+            (new_value.toLowerCase() === "no" &&
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-member-access
                 !GlobalConfig.parameters_to_not_delete_if_value_is_no.includes(
                     KEY,
                 )) ||
-            (NEWVALUE.toLowerCase() === "yes" &&
+            (new_value.toLowerCase() === "yes" &&
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access,@typescript-eslint/no-unsafe-call
                 GlobalConfig.parameters_to_delete_if_value_is_yes.includes(KEY))
         ) {
             REMOVED_PARAMETERS.push(KEY);
             continue;
         }
-        SANITIZED_DATA[KEY] = NEWVALUE;
+        
+        if (KEY === "description") new_value = new_value.replace(/(?:\\n)+/g, " ");
+        SANITIZED_DATA[KEY] = new_value;
     }
 
     return [SANITIZED_DATA, REMOVED_PARAMETERS];

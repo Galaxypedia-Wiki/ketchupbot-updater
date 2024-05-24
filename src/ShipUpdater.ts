@@ -23,15 +23,7 @@ export default class ShipUpdater {
 
         for (const SHIP of Object.keys(data)) {
             try {
-                const UPDATESTART = performance.now();
                 await this.updateShip(SHIP, data[SHIP]);
-                const UPDATEEND = performance.now();
-
-                Logger.log(
-                    `Updated ship: ${this.getShipName(SHIP)} in ${(UPDATEEND - UPDATESTART).toFixed(2)}ms`,
-                    Logger.LogLevel.INFO,
-                    Logger.LogStyle.CHECKMARK,
-                );
             } catch (error) {
                 Logger.log(
                     `Failed to update ship: ${this.getShipName(SHIP)}\n${(error as Error).stack ?? (error as Error).message}`,
@@ -67,6 +59,7 @@ export default class ShipUpdater {
         ship: string,
         data?: SingleShipData,
     ): Promise<void> {
+        const UPDATESTART = performance.now();
         if (!data) {
             const APIMANAGER = new APIManager();
 
@@ -180,6 +173,12 @@ export default class ShipUpdater {
                     (UPDATED_PARAMETERS.length > 0
                         ? ` | Updated parameters: ${UPDATED_PARAMETERS.join(", ")}`
                         : ""),
+            );
+            const UPDATEEND = performance.now();
+            Logger.log(
+                `Updated ship: ${ship} in ${(UPDATEEND - UPDATESTART).toFixed(2)}ms`,
+                Logger.LogLevel.INFO,
+                Logger.LogStyle.CHECKMARK,
             );
         } catch (error) {
             Logger.log(

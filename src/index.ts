@@ -10,8 +10,9 @@ import packageJson from "../package.json" with { type: "json" };
 import Scheduler from "./Scheduler.js";
 import path from "path";
 import { fileURLToPath } from "url";
-import 'dotenv/config';
+import "dotenv/config";
 
+//region CLI Initialization
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 function commaSeparatedList(value: string, dummyPrevious: unknown) {
     return value.split(",").map((v) => v.trim());
@@ -20,7 +21,6 @@ export const VERSION = packageJson.version;
 const FILENAME = fileURLToPath(import.meta.url);
 const DIRNAME = path.dirname(FILENAME);
 
-//region CLI Initialization
 program.version(VERSION);
 program
     .option(
@@ -133,13 +133,14 @@ void (async () => {
     if (scheduler !== null) return;
     //endregion
 
+    const OPERATIONS: Promise<void>[] = [];
     if (
         (typeof OPTIONS.ships === "string" &&
             OPTIONS.ships.toLowerCase() === "all") ||
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access,@typescript-eslint/no-unsafe-call
         (Array.isArray(OPTIONS.ships) && OPTIONS.ships[0] === "all")
     )
-        await SHIPUPDATER.updateAll(await APIMANAGER.getShipsData());
+        OPERATIONS.push(SHIPUPDATER.updateAll(await APIMANAGER.getShipsData()));
     else if (
         typeof OPTIONS.ships === "string" &&
         OPTIONS.ships.toLowerCase() === "none"
@@ -150,26 +151,23 @@ void (async () => {
             Logger.log("Skipping ship updates", Logger.LogLevel.INFO);
             return;
         }
-        for (const SHIP of OPTIONS.ships) {
-            try {
-                await SHIPUPDATER.updateShip(SHIP as string);
-            } catch (error) {
-                Logger.log(
-                    `Failed to update ship: ${SHIP as string}\n${(error as Error).stack ?? (error as Error).message}`,
-                    Logger.LogLevel.ERROR,
-                );
-            }
-        }
+
+        for (const SHIP of OPTIONS.ships)
+            OPERATIONS.push(SHIPUPDATER.updateShip(SHIP as string));
     }
 
-    if (OPTIONS.turrets === true) {
-        try {
-            await TURRETUPDATER.updateTurrets(await APIMANAGER.getTurretData());
-        } catch (error) {
-            Logger.log(
-                `Failed to update turrets\n${(error as Error).stack ?? (error as Error).message}`,
-                Logger.LogLevel.ERROR,
-            );
-        }
+    if (OPTIONS.turrets === true)
+        OPERATIONS.push(
+            TURRETUPDATER.updateTurrets(await APIMANAGER.getTurretData()),
+        );
+
+    // Run all operations concurrently
+    try {
+        await Promise.allSettled(OPERATIONS);
+    } catch (error) {
+        Logger.log(
+            `Failed to update ships or turrets\n${(error as Error).stack ?? (error as Error).message}`,
+            Logger.LogLevel.ERROR,
+        );
     }
 })();

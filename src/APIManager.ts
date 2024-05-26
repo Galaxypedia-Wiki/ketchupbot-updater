@@ -29,10 +29,10 @@ export default class APIManager {
 
     public async getShipsData(): Promise<ShipData> {
         const RESPONSE = await axios.get(
-            `${this.GALAXY_INFO_API.trim()}/api/v2/galaxypedia?token=${this.GALAXY_INFO_TOKEN.trim()}`,
+            `${this.GALAXY_INFO_API.trim()}/api/v2/galaxypedia?token=${encodeURIComponent(this.GALAXY_INFO_TOKEN.trim())}`,
         );
         console.log(
-            `${this.GALAXY_INFO_API.trim()}/api/v2/galaxypedia?token=${this.GALAXY_INFO_TOKEN.trim()}`,
+            `${this.GALAXY_INFO_API.trim()}/api/v2/galaxypedia?token=${encodeURIComponent(this.GALAXY_INFO_TOKEN.trim())}`,
         );
 
         return RESPONSE.data as ShipData;

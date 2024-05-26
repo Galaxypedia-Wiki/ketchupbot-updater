@@ -82,6 +82,7 @@ export default class ShipUpdater {
             Logger.LogLevel.INFO,
             Logger.LogStyle.PROGRESS,
         );
+        
         const FETCHARTICLESTART = performance.now();
         const ARTICLE: string = (await this.BOT.getArticle(ship)) as string;
         const FETCHARTICLEEND = performance.now();
@@ -137,7 +138,19 @@ export default class ShipUpdater {
             Logger.LogLevel.DEBUG,
             Logger.LogStyle.CHECKMARK,
         );
-
+        
+        // Check if the infobox has changed by comparing PARSEDINFOBOX and SANITIZEDINFOBOX
+        if (JSON.stringify(PARSEDINFOBOX) === JSON.stringify(SANITIZEDINFOBOX)) {
+            Logger.log(
+                `No changes detected for ship: ${ship}`,
+                Logger.LogLevel.INFO,
+                Logger.LogStyle.CHECKMARK,
+            );
+            return;
+        }
+        
+        if (process.env.NODE_ENV !== "production") console.log(Diff.diffData(PARSEDINFOBOX, SANITIZEDINFOBOX));
+        
         const WIKITEXTCONSTRUCTIONSTART = performance.now();
         const NEWWIKITEXT = WikiParser.replaceInfobox(
             ARTICLE,
@@ -151,27 +164,16 @@ export default class ShipUpdater {
             Logger.LogStyle.CHECKMARK,
         );
 
-        if (ARTICLE === NEWWIKITEXT) {
-            Logger.log(
-                `No changes detected for ship: ${ship}`,
-                Logger.LogLevel.INFO,
-                Logger.LogStyle.CHECKMARK,
-            );
-            return;
-        }
-
-        if (process.env.NODE_ENV !== "production") console.log(Diff.diffData(PARSEDINFOBOX, SANITIZEDINFOBOX));
-
         try {
             await this.BOT.edit(
                 ship,
                 NEWWIKITEXT,
                 "Automatic Update" +
                     (REMOVEDPARAMETERS.length > 0
-                        ? ` | Removed parameters: ${REMOVEDPARAMETERS.join(", ")}`
+                        ? ` | Removed parameters: ${REMOVEDPARAMETERS.sort().join(", ")}`
                         : "") +
                     (UPDATED_PARAMETERS.length > 0
-                        ? ` | Updated parameters: ${UPDATED_PARAMETERS.join(", ")}`
+                        ? ` | Updated parameters: ${UPDATED_PARAMETERS.filter((param) => !REMOVEDPARAMETERS.includes(param)).sort().join(", ")}`
                         : ""),
             );
             const UPDATEEND = performance.now();

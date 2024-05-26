@@ -84,7 +84,7 @@ export default class ShipUpdater {
         );
         
         const FETCHARTICLESTART = performance.now();
-        const ARTICLE: string = (await this.BOT.getArticle(ship)) as string;
+        const ARTICLE: string = await this.BOT.getArticle(ship) as string;
         const FETCHARTICLEEND = performance.now();
         Logger.log(
             `Fetching article took ${(FETCHARTICLEEND - FETCHARTICLESTART).toFixed(2)}ms`,

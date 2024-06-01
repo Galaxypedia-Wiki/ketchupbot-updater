@@ -134,6 +134,7 @@ void (async () => {
     //endregion
 
     const OPERATIONS: Promise<void>[] = [];
+    //region CLI & Operation Logic
     if (
         (typeof OPTIONS.ships === "string" &&
             OPTIONS.ships.toLowerCase() === "all") ||
@@ -160,13 +161,13 @@ void (async () => {
         OPERATIONS.push(
             TURRETUPDATER.updateTurrets(await APIMANAGER.getTurretData()),
         );
+    //endregion
 
-    // Run all operations concurrently
     try {
         await Promise.allSettled(OPERATIONS);
     } catch (error) {
         Logger.log(
-            `Failed to update ships or turrets\n${(error as Error).stack ?? (error as Error).message}`,
+            `Operation failed!\n${(error as Error).stack ?? (error as Error).message}`,
             Logger.LogLevel.ERROR,
         );
     }

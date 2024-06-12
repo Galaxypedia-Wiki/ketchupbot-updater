@@ -21,7 +21,7 @@ We recommend using NodeJS v20 or later.
 1. Clone the repository and enter into the directory
 2. Run `npm install`
 3. Rename .env.example to .env and fill it out (we know you won't have a Galaxy Info Token, please contact Galaxypedia staff for help with this)
-4. Run `npm run run -- --help`
+4. Run `npm run run -- --help`  
 If the above command succeeds, you should have a functional development build. Replace --help with the arguments of your choice to change KetchupBot's behaviour.
 
 ## Setting up a dev environment

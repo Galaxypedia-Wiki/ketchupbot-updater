@@ -1,5 +1,5 @@
 # KetchupBot-Updater
-This is the updater component of the KetchupBot Project. This component facilitates grabbing data from the Galaxy Info API and using that data to update the Galaxypedia.
+This is the updater component of the KetchupBot Project. This component facilitates grabbing data from the Galaxy Info API and using that data to update the [Galaxypedia](https://robloxgalaxy.wiki).
 
 ## Notices & Terms
 This software is Open Source and licensed under the CC-BY-SA license. You must follow the rules in the license when contributing, modifying, using, and/or redistributing the software. In addition to the license, you must follow the Galaxypedia's [Terms of Service](https://robloxgalaxy.wiki/wiki/Galaxypedia:Terms_of_Service#4._Rules,_Policies,_Guidelines).

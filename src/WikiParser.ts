@@ -158,7 +158,7 @@ export function sanitizeData(
                 GlobalConfig.parameters_to_delete_if_value_is_yes.includes(KEY))
         ) {
             // Since the step before this step is typically data merging, parameters that were already removed from the page will be added back from the API.
-            // This is okay, as the data merging step will remove them again.But at the same time, we don't want to log them as removed parameters, as they were already removed from the page.
+            // This is okay, as the data merging step will remove them again. But at the same time, we don't want to log them as removed parameters, as they were already removed from the page.
             if (KEY in oldData) REMOVED_PARAMETERS.push(KEY);
             continue;
         }

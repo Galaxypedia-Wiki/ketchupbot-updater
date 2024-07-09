@@ -127,17 +127,19 @@ export function mergeData(
             .sort(([aKey], [bKey]) => aKey.localeCompare(bKey)) // Sort the entries by key
             .reduce((acc, [key, val]) => ({ ...acc, [key]: val }), {}), // Convert the entries back into an object
         UPDATED_PARAMETERS,
-    ]; 
+    ];
 }
 
 /**
  * Sanitize data
  *
  * Creates and returns a new sanitized object
- * @param data
+ * @param data The data to sanitize
+ * @param oldData The old data to compare against. This is only used to log the removal of parameters that were merged in from the Galaxypedia-side
  */
 export function sanitizeData(
     data: Record<string, string>,
+    oldData: Partial<Record<string, string>>,
 ): [Record<string, string>, string[]] {
     const SANITIZED_DATA: Record<string, string> = {};
     const REMOVED_PARAMETERS: string[] = [];
@@ -155,11 +157,14 @@ export function sanitizeData(
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access,@typescript-eslint/no-unsafe-call
                 GlobalConfig.parameters_to_delete_if_value_is_yes.includes(KEY))
         ) {
-            REMOVED_PARAMETERS.push(KEY);
+            // Since the step before this step is typically data merging, parameters that were already removed from the page will be added back from the API.
+            // This is okay, as the data merging step will remove them again.But at the same time, we don't want to log them as removed parameters, as they were already removed from the page.
+            if (KEY in oldData) REMOVED_PARAMETERS.push(KEY);
             continue;
         }
-        
-        if (KEY === "description") new_value = new_value.replace(/(?:\\n)+/g, " ");
+
+        if (KEY === "description")
+            new_value = new_value.replace(/(?:\\n)+/g, " ");
         SANITIZED_DATA[KEY] = new_value;
     }
 

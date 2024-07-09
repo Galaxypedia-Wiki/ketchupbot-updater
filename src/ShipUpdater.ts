@@ -154,7 +154,7 @@ export default class ShipUpdater {
         //region Sanitization logic
         const SANITIZATION_START = performance.now();
         const [SANITIZED_INFOBOX, REMOVED_PARAMETERS] =
-            WikiParser.sanitizeData(MERGED_INFOBOX);
+            WikiParser.sanitizeData(MERGED_INFOBOX, PARSED_INFOBOX);
         const SANITIZATION_END = performance.now();
         Logger.log(
             `Sanitizing data took ${(SANITIZATION_END - SANITIZATION_START).toFixed(2)}ms`,

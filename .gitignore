@@ -1,3 +1,6 @@
-.env
-dist/
-node_modules/
+bin/
+obj/
+/packages/
+riderModule.iml
+/_ReSharper.Caches/
+ketchupbot-updater/.env

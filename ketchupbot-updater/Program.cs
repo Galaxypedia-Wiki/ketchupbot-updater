@@ -4,6 +4,7 @@ using System.Reflection;
 using System.Text.Json;
 using ketchupbot_updater.API;
 using ketchupbot_updater.Types;
+using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using Quartz;
 using Quartz.Impl;
@@ -17,7 +18,7 @@ public static class Program
 {
     public static bool DryRun { get; private set; }
 
-    private static int Main(string[] args)
+    private static async Task<int> Main(string[] args)
     {
         #region Options
 
@@ -91,12 +92,23 @@ public static class Program
             dryRunOption
         };
 
-        string banner = File.ReadAllText(Path.GetFullPath(Path.Join("Assets", "banner.txt")));
-        Console.WriteLine(banner);
-        Console.WriteLine(
-            $"ketchupbot-updater | v{Assembly.GetExecutingAssembly().GetName().Version} | {DateTime.Now}");
+        await using (Stream? stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("ketchupbot_updater.Assets.banner.txt"))
+        {
+            if (stream == null)
+                throw new Exception("Failed to load banner");
 
-        #region Environment Variable Configuration
+            using (var reader = new StreamReader(stream)) Console.WriteLine(reader.ReadToEnd());
+        }
+        Console.WriteLine(
+            $"\nketchupbot-updater | v{Assembly.GetExecutingAssembly().GetName().Version} | {DateTime.Now}\n");
+
+        #region Configuration
+        IConfigurationBuilder builder = new ConfigurationBuilder()
+            .SetBasePath(AppContext.BaseDirectory)
+            .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+            .AddEnvironmentVariables();
+
+        IConfigurationRoot configuration = builder.Build();
 
 #if !DEBUG
         Production = true;
@@ -105,17 +117,31 @@ public static class Program
         DryRun = true;
 #endif
 
-        rootCommand.SetHandler(idk => DryRun = Environment.GetEnvironmentVariable("DRY_RUN") == "true" || idk,
+        rootCommand.SetHandler(idk => DryRun = configuration["DRY_RUN"] == "true" || idk,
             dryRunOption);
-
         #endregion
 
-        var schedulerFactory = new StdSchedulerFactory();
-        IScheduler scheduler = schedulerFactory.GetScheduler().GetAwaiter().GetResult();
+        // var schedulerFactory = new StdSchedulerFactory();
+        // IScheduler scheduler = schedulerFactory.GetScheduler().GetAwaiter().GetResult();
 
-        var mwClient = new MwClient("", "");
-        var apiManager = new ApiManager("https://api.info.galaxy.casa", "");
-        new ShipUpdater(mwClient, apiManager).UpdateShip("Deity").GetAwaiter().GetResult();
+
+        var mwClient = new MwClient(configuration["MWUSERNAME"] ?? throw new InvalidOperationException(), configuration["MWPASSWORD"] ?? throw new InvalidOperationException());
+        Logger.Log("Logged into the wiki", style: LogStyle.Checkmark);
+        var apiManager = new ApiManager("https://api.info.galaxy.casa", configuration["GIAPI_TOKEN"] ?? throw new InvalidOperationException());
+        var shipUpdater = new ShipUpdater(mwClient, apiManager);
+
+        rootCommand.SetHandler(async ships =>
+        {
+            if (ships.First() == "all")
+                await shipUpdater.UpdateAllShips();
+            else if (ships.First() != "none")
+            {
+                foreach (string ship in ships)
+                {
+                    await shipUpdater.UpdateShip(ship);
+                }
+            }
+        }, shipsOption);
 
 
         // Dictionary<string, ShipData>? fart = apiManager.GetShipsData().GetAwaiter().GetResult();
@@ -126,6 +152,6 @@ public static class Program
         //         NullValueHandling = NullValueHandling.Ignore
         //     }));
 
-        return rootCommand.Invoke(args);
+        return await rootCommand.InvokeAsync(args);
     }
 }

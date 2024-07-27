@@ -57,7 +57,7 @@ public class MwClient
 
         string loginJson = loginRequest.Content.ReadAsStringAsync().GetAwaiter().GetResult();
         dynamic? loginData = JsonConvert.DeserializeObject<dynamic>(loginJson);
-        if (loginData?.login.result != "Success") throw new InvalidOperationException("Failed to log in to the wiki");
+        if (loginData?.login.result != "Success") throw new InvalidOperationException("Failed to log in to the wiki: " + loginData?.login.reason);
     }
 
     public async Task<string> GetArticle(string title)
@@ -71,16 +71,30 @@ public class MwClient
 
         dynamic? data = JsonConvert.DeserializeObject<dynamic>(jsonResponse);
 
-        string? pageContent = data?.query.pages[0].revisions[0].slots.main.content;
-        if (pageContent == null) throw new InvalidOperationException("Failed to fetch article content. The page may not exist.");
+        // TODO: Fix the code duplication here
 
-        return pageContent;
+        string? pageContent = null;
+
+        if (data?.query?.pages == null || data?.query.pages.Count <= 0)
+            return pageContent ?? throw new InvalidOperationException("Failed to fetch article");
+
+        dynamic? page = data?.query.pages[0];
+
+        if (page?.revisions == null || page?.revisions.Count <= 0)
+            return pageContent ?? throw new InvalidOperationException("Failed to fetch article");
+
+        dynamic? revision = page?.revisions[0];
+
+        if (revision?.slots?.main != null) pageContent = revision.slots.main.content;
+
+        return pageContent ?? throw new InvalidOperationException("Failed to fetch article");
     }
 
     public async Task<bool> EditArticle(string title, string newContent, string summary)
     {
         // If dry run is enabled, don't actually make the edit. Mock success instead.
-        if (Program.DryRun) return true;
+        if (Program.DryRun)
+            return true;
 
         // Get MD5 hash of the new content to use for validation
         string newContentHash = BitConverter.ToString(MD5.HashData(Encoding.UTF8.GetBytes(newContent))).Replace("-", "").ToLower();

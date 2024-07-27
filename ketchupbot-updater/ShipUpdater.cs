@@ -15,7 +15,55 @@ namespace ketchupbot_updater;
 public partial class ShipUpdater(MwClient bot, ApiManager apiManager)
 {
     private static string GetShipName(string data) => GlobalConfiguration.ShipNameMap.GetValueOrDefault(data, data);
-    private static string GetShipName(ShipData data) => GetShipName(data.Title ?? throw new InvalidOperationException("Ship data has no title to use for lookup"));
+
+    private const int MaxLength = 12;
+
+    /// <summary>
+    /// Mass update all ships with the provided data. If no data is provided, it will fetch the data from the API.
+    /// </summary>
+    /// <param name="shipDatas">The ship data to use during the update run</param>
+    /// <param name="multithreaded">Whether to distribute the ship updates over a ThreadPool, or use a singlethreaded foreach loop</param>
+    public async Task UpdateAllShips(Dictionary<string, ShipData>? shipDatas = null, bool multithreaded = true)
+    {
+        var massUpdateStart = Stopwatch.StartNew();
+        shipDatas ??= await apiManager.GetShipsData();
+        ArgumentNullException.ThrowIfNull(shipDatas);
+
+        if (multithreaded)
+        {
+            List<Task> tasks = shipDatas.Select(ship => UpdateShipWrapper(ship.Key, ship.Value)).ToList();
+
+            await Task.WhenAll(tasks);
+        }
+        else
+        {
+            foreach (KeyValuePair<string, ShipData> ship in shipDatas)
+            {
+                await UpdateShipWrapper(ship.Key, ship.Value);
+            }
+        }
+
+        massUpdateStart.Stop();
+        Logger.Log($"Finished updating all ships in {massUpdateStart.ElapsedMilliseconds/1000} seconds", style: LogStyle.Checkmark);
+        Logger.Log($"Current thread pool count: {ThreadPool.ThreadCount}");
+    }
+
+    /// <summary>
+    /// Wrapper for UpdateShip that catches exceptions and logs them instead of throwing them
+    /// </summary>
+    /// <param name="ship"></param>
+    /// <param name="data"></param>
+    private async Task UpdateShipWrapper(string ship, ShipData? data = null)
+    {
+        try
+        {
+            await UpdateShip(ship, data);
+        }
+        catch (Exception e)
+        {
+            Logger.Log($"{GetShipIdentifier(ship)} Failed to update ship: {e.Message}", level: LogLevel.Error);
+        }
+    }
 
     /// <summary>
     /// Update a singular ship page with the provided data (or fetch it if not provided)
@@ -30,7 +78,7 @@ public partial class ShipUpdater(MwClient bot, ApiManager apiManager)
         #region Data Fetching Logic
         if (data == null)
         {
-            Dictionary<string, ShipData>? shipStats = apiManager.GetShipsData().GetAwaiter().GetResult();
+            Dictionary<string, ShipData>? shipStats = await apiManager.GetShipsData();
 
             ShipData? shipData = (shipStats ?? throw new InvalidOperationException("Failed to get ship data")).GetValueOrDefault(ship ?? throw new InvalidOperationException("No ship name provided"));
 
@@ -44,41 +92,52 @@ public partial class ShipUpdater(MwClient bot, ApiManager apiManager)
         }
         #endregion
 
-        Logger.Log("Updating ship: " + ship);
+        Logger.Log($"{GetShipIdentifier(ship)} Updating ship...", style: LogStyle.Progress);
 
         #region Article Fetch Logic
+#if DEBUG
         var fetchArticleStart = Stopwatch.StartNew();
+#endif
+
         string article = await bot.GetArticle(ship); // Throws exception if article does not exist
+
+#if DEBUG
         fetchArticleStart.Stop();
-        Console.WriteLine($"Fetched article in {fetchArticleStart.ElapsedMilliseconds}ms");
+        Logger.Log($"{GetShipIdentifier(ship)} Fetched article in {fetchArticleStart.ElapsedMilliseconds}ms", style: LogStyle.Checkmark);
+#endif
         #endregion
 
-        #region Ignore Flag Check
         if (IGNORE_FLAG_REGEX().IsMatch(article.ToLower())) throw new Exception("Found ignore flag in article");
-        #endregion
 
         // TODO: I think I can probably come up with a better way to do this. The current way of converting the data to a dictionary and then back to a dictionary is a bit silly. I can probably just use the data object directly, and merge the two objects together somehow. This way we don't have to resort to using Dictionary<string, string> for everything and can use the actual data object which is more strongly typed.
 
         #region Infobox Parsing Logic
+#if DEBUG
         var parsingInfoboxStart = Stopwatch.StartNew();
+#endif
+
         Dictionary<string, string> parsedInfobox = WikiParser.ParseInfobox(WikiParser.ExtractInfobox(article));
+
+#if DEBUG
         parsingInfoboxStart.Stop();
-        Console.WriteLine($"Parsed infobox in {parsingInfoboxStart.ElapsedMilliseconds}ms");
+        Logger.Log($"{GetShipIdentifier(ship)} Parsed infobox in {parsingInfoboxStart.ElapsedMilliseconds}ms", style: LogStyle.Checkmark);
+#endif
         #endregion
 
-        #region Convert data into dictionary
-        string dataJson = JsonConvert.SerializeObject(data);
-        var dataDict = JsonConvert.DeserializeObject<Dictionary<string, string>>(dataJson);
-        #endregion
+        // Convert data into a dictionary
+        var dataDict = JsonConvert.DeserializeObject<Dictionary<string, string>>(JsonConvert.SerializeObject(data));
 
         #region Data merging logic
-
 #if DEBUG
         var mergeDataStart = Stopwatch.StartNew();
 #endif
+
         Tuple<Dictionary<string, string>, List<string>> mergedData = WikiParser.MergeData(dataDict ?? throw new InvalidOperationException("Supplied data is null after deserialization"), parsedInfobox);
+
+#if DEBUG
         mergeDataStart.Stop();
-        Console.WriteLine($"Merged data in {mergeDataStart.ElapsedMilliseconds}ms");
+        Logger.Log($"{GetShipIdentifier(ship)} Merged data in {mergeDataStart.ElapsedMilliseconds}ms", style: LogStyle.Checkmark);
+#endif
         #endregion
 
         #region Data Sanitization Logic
@@ -90,8 +149,7 @@ public partial class ShipUpdater(MwClient bot, ApiManager apiManager)
 
 #if DEBUG
         sanitizeDataStart.Stop();
-        Console.WriteLine($"Sanitized data in {sanitizeDataStart.ElapsedMilliseconds}ms");
-        Console.WriteLine($"Sanitized data: {JsonConvert.SerializeObject(sanitizedData.Item1, Formatting.Indented)}");
+        Logger.Log($"{GetShipIdentifier(ship)} Sanitized data in {sanitizeDataStart.ElapsedMilliseconds}ms", style: LogStyle.Checkmark);
 #endif
         #endregion
 
@@ -101,8 +159,8 @@ public partial class ShipUpdater(MwClient bot, ApiManager apiManager)
         var jdp = new JsonDiffPatch();
         string? diff = jdp.Diff(JsonConvert.SerializeObject(sanitizedData.Item1, Formatting.Indented), JsonConvert.SerializeObject(parsedInfobox, Formatting.Indented));
 
-        if (!string.IsNullOrEmpty(diff))
-            Console.WriteLine($"Diff:\n{diff}");
+        // if (!string.IsNullOrEmpty(diff))
+        //     Console.WriteLine($"Diff:\n{diff}");
 #endif
         #endregion
 
@@ -115,7 +173,7 @@ public partial class ShipUpdater(MwClient bot, ApiManager apiManager)
 
 #if DEBUG
         wikitextConstructionStart.Stop();
-        Console.WriteLine($"Constructed wikitext in {wikitextConstructionStart.ElapsedMilliseconds}ms");
+        Logger.Log($"{GetShipIdentifier(ship)} Constructed wikitext in {wikitextConstructionStart.ElapsedMilliseconds}ms", style: LogStyle.Checkmark);
 #endif
         #endregion
 
@@ -128,14 +186,23 @@ public partial class ShipUpdater(MwClient bot, ApiManager apiManager)
 
 #if DEBUG
         articleEditStart.Stop();
-        Logger.Log($"Edited article in {articleEditStart.ElapsedMilliseconds}ms");
+        Logger.Log($"{GetShipIdentifier(ship)} Edited page in {articleEditStart.ElapsedMilliseconds}ms", style: LogStyle.Checkmark);
 #endif
         #endregion
 
 #if DEBUG
         updateStart.Stop();
-        Logger.Log($"Updated {ship} in {updateStart.ElapsedMilliseconds}ms");
+        Logger.Log($"{GetShipIdentifier(ship)} Updated ship in {updateStart.ElapsedMilliseconds}ms", style: LogStyle.Checkmark);
+        Logger.Log($"{GetShipIdentifier(ship)} Current thread pool count: {ThreadPool.ThreadCount}");
 #endif
+    }
+
+    private string GetShipIdentifier(string ship)
+    {
+        string truncatedShipName = ship.Length > MaxLength ? ship[..MaxLength] : ship;
+        string paddedShipName = truncatedShipName.PadRight(MaxLength);
+
+        return $"{paddedShipName} {Environment.CurrentManagedThreadId,-2} |";
     }
 
     [GeneratedRegex(@"<!--\s*ketchupbot-ignore\s*-->", RegexOptions.IgnoreCase | RegexOptions.Multiline)]

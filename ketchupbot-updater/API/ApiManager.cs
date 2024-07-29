@@ -6,6 +6,10 @@ namespace ketchupbot_updater.API;
 
 public class ApiManager(string galaxyInfoApi, string galaxyInfoApiToken)
 {
+    /// <summary>
+    /// Cached ship data from the last successful run.
+    /// TODO: This probably isn't enough. We should probably add persistence to this.
+    /// </summary>
     private string? _cachedShipData;
 
     private static readonly HttpClient HttpClient = new();
@@ -40,15 +44,19 @@ public class ApiManager(string galaxyInfoApi, string galaxyInfoApiToken)
         }
     }
 
-    public async Task<Dictionary<string, List<TurretData>>?> GetTurretData()
+    public async Task<Dictionary<string, TurretData>?> GetTurretData()
     {
         HttpResponseMessage response = await HttpClient.GetAsync($"{galaxyInfoApi.Trim()}/api/v2/ships-turret/raw");
 
         response.EnsureSuccessStatusCode();
 
-        string jsonResponse = await response.Content.ReadAsStringAsync();
+        string stringResponse = await response.Content.ReadAsStringAsync();
 
-        return JsonConvert.DeserializeObject<Dictionary<string, List<TurretData>>>(jsonResponse);
+        Console.WriteLine(stringResponse);
+
+        dynamic? jsonResponse = JsonConvert.DeserializeObject<dynamic>(stringResponse);
+
+        return JsonConvert.DeserializeObject<Dictionary<string, TurretData>>(jsonResponse?.serializedTurrets);
     }
 
 }

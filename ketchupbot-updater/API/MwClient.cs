@@ -30,19 +30,31 @@ public class MwClient
 
         Client.DefaultRequestHeaders.Add("User-Agent", "KetchupBot-Updater/1.0");
 
-        using HttpResponseMessage loginTokenRequest = Client
-            .GetAsync($"{baseUrl}?action=query&format=json&meta=tokens&type=login").GetAwaiter().GetResult();
+        LogIn(username, password).GetAwaiter().GetResult();
+    }
+
+    /// <summary>
+    ///
+    /// </summary>
+    /// <param name="username"></param>
+    /// <param name="password"></param>
+    /// <returns></returns>
+    /// <exception cref="InvalidOperationException"></exception>
+    private async Task LogIn(string username, string password)
+    {
+        using HttpResponseMessage loginTokenRequest = await Client
+            .GetAsync($"{_baseUrl}?action=query&format=json&meta=tokens&type=login");
 
         loginTokenRequest.EnsureSuccessStatusCode();
 
-        string loginTokenJson = loginTokenRequest.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+        string loginTokenJson = await loginTokenRequest.Content.ReadAsStringAsync();
         // Deserialize the JSON response to a dynamic object because I can't be bothered to make a class for it
         dynamic? loginTokenData = JsonConvert.DeserializeObject<dynamic>(loginTokenJson);
         string? loginToken = loginTokenData?.query.tokens.logintoken;
 
         if (loginToken == null) throw new InvalidOperationException("Failed to fetch login token");
 
-        using HttpResponseMessage loginRequest = Client.PostAsync(baseUrl, new FormUrlEncodedContent(
+        using HttpResponseMessage loginRequest = await Client.PostAsync(_baseUrl, new FormUrlEncodedContent(
             new Dictionary<string, string>
             {
                 { "action", "login" },
@@ -51,13 +63,22 @@ public class MwClient
                 { "lgpassword", password },
                 { "lgtoken", loginToken }
             })
-        ).GetAwaiter().GetResult();
+        );
 
         loginRequest.EnsureSuccessStatusCode();
 
-        string loginJson = loginRequest.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+        string loginJson = await loginRequest.Content.ReadAsStringAsync();
         dynamic? loginData = JsonConvert.DeserializeObject<dynamic>(loginJson);
         if (loginData?.login.result != "Success") throw new InvalidOperationException("Failed to log in to the wiki: " + loginData?.login.reason);
+    }
+
+    /// <summary>
+    ///
+    /// </summary>
+    /// <exception cref="NotImplementedException"></exception>
+    public void IsLoggedIn()
+    {
+        throw new NotImplementedException();
     }
 
     public async Task<string> GetArticle(string title)

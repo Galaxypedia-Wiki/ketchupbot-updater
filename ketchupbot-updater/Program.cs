@@ -1,13 +1,7 @@
 ﻿using System.CommandLine;
-using System.ComponentModel;
 using System.Reflection;
-using System.Text.Json;
 using ketchupbot_updater.API;
-using ketchupbot_updater.Types;
 using Microsoft.Extensions.Configuration;
-using Newtonsoft.Json;
-using Quartz;
-using Quartz.Impl;
 
 namespace ketchupbot_updater;
 
@@ -58,7 +52,7 @@ public static class Program
 
         var shipScheduleOption = new Option<string>(
             ["-ss", "--ship-schedule"],
-            "Pass to enable the ship schduler. Will ignore ships option. This takes precedence over the environment variable"
+            "Pass to enable the ship scheduler. Will ignore ships option. This takes precedence over the environment variable"
         )
         {
             IsRequired = false
@@ -66,7 +60,7 @@ public static class Program
 
         var turretScheduleOption = new Option<string>(
             ["-ts", "--turret-schedule"],
-            "Pass to enable the turret schduler. Will ignore turrets option. This takes precedence over the environment variable"
+            "Pass to enable the turret scheduler. Will ignore turrets option. This takes precedence over the environment variable"
         )
         {
             IsRequired = false
@@ -76,6 +70,11 @@ public static class Program
             "--dry-run",
             "Pass to enable dry run. This takes precedence over the environment variable"
         );
+
+        var threadCountOption = new Option<int>(
+            "--threads",
+            getDefaultValue: () => 0,
+            "Number of threads to use when updating ships. Set to 1 for singlethreaded, 0 for automatic (let the the .NET runtime decide the thread count)");
 
         #endregion
 
@@ -89,7 +88,8 @@ public static class Program
             galaxyInfoApiTokenOption,
             shipScheduleOption,
             turretScheduleOption,
-            dryRunOption
+            dryRunOption,
+            threadCountOption
         };
 
         await using (Stream? stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("ketchupbot_updater.Assets.banner.txt"))
@@ -97,7 +97,7 @@ public static class Program
             if (stream == null)
                 throw new Exception("Failed to load banner");
 
-            using (var reader = new StreamReader(stream)) Console.WriteLine(reader.ReadToEnd());
+            using (var reader = new StreamReader(stream)) Console.WriteLine(await reader.ReadToEndAsync());
         }
         Console.WriteLine(
             $"\nketchupbot-updater | v{Assembly.GetExecutingAssembly().GetName().Version} | {DateTime.Now}\n");
@@ -124,11 +124,20 @@ public static class Program
         // var schedulerFactory = new StdSchedulerFactory();
         // IScheduler scheduler = schedulerFactory.GetScheduler().GetAwaiter().GetResult();
 
-
+        // TODO: Move this stuff into a handler for rootCommand
         var mwClient = new MwClient(configuration["MWUSERNAME"] ?? throw new InvalidOperationException(), configuration["MWPASSWORD"] ?? throw new InvalidOperationException());
         Logger.Log("Logged into the wiki", style: LogStyle.Checkmark);
         var apiManager = new ApiManager("https://api.info.galaxy.casa", configuration["GIAPI_TOKEN"] ?? throw new InvalidOperationException());
         var shipUpdater = new ShipUpdater(mwClient, apiManager);
+
+
+        // Dictionary<string, TurretData>? turretdata = await apiManager.GetTurretData();
+        // Console.WriteLine(turretdata);
+        // if (turretdata != null)
+        //     Console.WriteLine(JsonConvert.SerializeObject(turretdata.First(), Formatting.Indented, new JsonSerializerSettings
+        //     {
+        //         NullValueHandling = NullValueHandling.Ignore
+        //     }));
 
         rootCommand.SetHandler(async ships =>
         {

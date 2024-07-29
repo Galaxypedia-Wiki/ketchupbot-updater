@@ -38,34 +38,35 @@ public static partial class WikiParser
             string symbol = match.Value;
             int index = match.Index;
 
+            // I just want to say to anyone (I guess just me) who is reading this in the future, the reason why we use AsSpan here instead of just Substring is because AsSpan will essentially create a reference to a certain part of the original string, which is more efficient than creating a new string every time we want to get a substring. This saves on memory, so yea.
+            // Though, this entire section should probably be flushed out and rewritten to be more efficient. Can probably use something like StringBuilder to make this more efficient.
+
             switch (symbol)
             {
                 case "[[":
-                    currentPart += text.Substring(lastIndex, index - lastIndex) + "[[";
+                    currentPart += string.Concat(text.AsSpan(lastIndex, index - lastIndex), "[[");
                     inLink = true;
                     break;
                 case "]]":
-                    currentPart += text.Substring(lastIndex, index - lastIndex) + "]]";
+                    currentPart += string.Concat(text.AsSpan(lastIndex, index - lastIndex), "]]");
                     inLink = false;
                     break;
                 case "{{":
-                    currentPart += text.Substring(lastIndex, index - lastIndex) + "{{";
+                    currentPart += string.Concat(text.AsSpan(lastIndex, index - lastIndex), "{{");
                     inTemplate = true;
                     break;
                 case "}}":
-                    currentPart += text.Substring(lastIndex, index - lastIndex) + "}}";
+                    currentPart += string.Concat(text.AsSpan(lastIndex, index - lastIndex), "}}");
                     inTemplate = false;
                     break;
                 case "|":
                     if (!inLink && !inTemplate)
                     {
-                        parts.Add(currentPart + text.Substring(lastIndex, index - lastIndex));
+                        parts.Add(string.Concat(currentPart, text.AsSpan(lastIndex, index - lastIndex)));
                         currentPart = "";
                     }
                     else
-                    {
-                        currentPart += text.Substring(lastIndex, index - lastIndex) + "|";
-                    }
+                        currentPart += string.Concat(text.AsSpan(lastIndex, index - lastIndex), "|");
 
                     break;
             }
@@ -94,16 +95,15 @@ public static partial class WikiParser
             return new { Key = key, Value = value };
         }).ToDictionary(pair => pair.Key, pair => pair.Value);
 
-        if (infoboxKeyPairs.TryGetValue("image", out string? image) && image.StartsWith("<gallery>"))
-        {
-            Match originalGallery = GalleryRegex().Match(text);
-            if (!originalGallery.Success)
-            {
-                throw new Exception("Gallery found in infobox but unable to extract it");
-            }
+        if (!infoboxKeyPairs.TryGetValue("image", out string? image) || !image.StartsWith("<gallery>"))
+            return infoboxKeyPairs;
 
-            infoboxKeyPairs["image"] = originalGallery.Value;
-        }
+        Match originalGallery = GalleryRegex().Match(text);
+
+        if (!originalGallery.Success)
+            throw new Exception("Gallery found in infobox but unable to extract it");
+
+        infoboxKeyPairs["image"] = originalGallery.Value;
 
         return infoboxKeyPairs;
     }
@@ -136,6 +136,12 @@ public static partial class WikiParser
         return new Tuple<Dictionary<string, string>, List<string>>(sortedData, updatedParameters);
     }
 
+    /// <summary>
+    /// Sanitize data
+    /// </summary>
+    /// <param name="data"></param>
+    /// <param name="oldData"></param>
+    /// <returns></returns>
     public static Tuple<Dictionary<string, string>, List<string>> SanitizeData(Dictionary<string, string> data,
         Dictionary<string, string> oldData)
     {
@@ -180,22 +186,36 @@ public static partial class WikiParser
         return new Tuple<Dictionary<string, string>, List<string>>(sanitizedData, removedParameters);
     }
 
+    /// <summary>
+    /// Convert a Dictionary to a wikitext ship infobox
+    /// </summary>
+    /// <param name="data"></param>
+    /// <returns></returns>
     public static string ObjectToWikitext(Dictionary<string, string> data)
     {
         var sb = new StringBuilder();
 
         sb.AppendLine("{{Ship Infobox");
-        foreach (KeyValuePair<string,string> keyValuePair in data)
-        {
-            sb.AppendLine($"|{keyValuePair.Key} = {keyValuePair.Value}");
-        }
+        foreach (KeyValuePair<string,string> keyValuePair in data) sb.AppendLine($"|{keyValuePair.Key} = {keyValuePair.Value}");
         sb.AppendLine("}}");
 
         return sb.ToString();
     }
 
+    /// <summary>
+    ///
+    /// </summary>
+    /// <param name="text"></param>
+    /// <param name="infobox"></param>
+    /// <returns></returns>
     public static string ReplaceInfobox(string text, string infobox) => SHIP_INFOBOX_REGEX().Replace(text, infobox);
 
+    /// <summary>
+    ///
+    /// </summary>
+    /// <param name="text"></param>
+    /// <returns></returns>
+    /// <exception cref="Exception"></exception>
     public static MatchCollection ExtractTurretTables(string text)
     {
         MatchCollection turretTables = TURRET_TABLE_REGEX().Matches(text);

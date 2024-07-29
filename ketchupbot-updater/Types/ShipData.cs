@@ -14,16 +14,8 @@ public class ShipData
     [JsonProperty("shields")]
     public string? Shields { get; set; }
 
-    [JsonIgnore]
-    public int? ShieldsInt =>
-        int.TryParse(Shields, NumberStyles.AllowThousands, new CultureInfo("en-US"), out int shields) ? shields : null;
-
     [JsonProperty("hull")]
     public string? Hull { get; set; }
-
-    [JsonIgnore]
-    public int? HullInt =>
-        int.TryParse(Hull, NumberStyles.AllowThousands, new CultureInfo("en-US"), out int hull) ? hull : null;
 
     [JsonProperty("top_speed")]
     public double? TopSpeed { get; set; }
@@ -52,16 +44,8 @@ public class ShipData
     [JsonProperty("m_class_range")]
     public string? MClassRange { get; set; }
 
-    [JsonIgnore]
-    public int? MClassRangeInt =>
-        int.TryParse(MClassRange, NumberStyles.AllowThousands, new CultureInfo("en-US"), out int mClassRange) ? mClassRange : null;
-
     [JsonProperty("r_class_range")]
     public string? RClassRange { get; set; }
-
-    [JsonIgnore]
-    public int? RClassRangeInt =>
-        int.TryParse(RClassRange, NumberStyles.AllowThousands, new CultureInfo("en-US"), out int rClassRange) ? rClassRange : null;
 
     [JsonProperty("mining_lasers")]
     public string? MiningLasers { get; set; }

@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using System.Text.RegularExpressions;
-using JsonDiffPatchDotNet;
 using ketchupbot_updater.API;
 using ketchupbot_updater.Types;
 using Newtonsoft.Json;
@@ -155,9 +154,10 @@ public partial class ShipUpdater(MwClient bot, ApiManager apiManager)
 
         #region Diffing logic
         // This logic is only for debugging/development instances to see what changes are being made to the infobox. It is not necessary for the bot to function, so it should not be in production.
+        // I've turned it off cuz its kinda annoying
 #if DEBUG
-        var jdp = new JsonDiffPatch();
-        string? diff = jdp.Diff(JsonConvert.SerializeObject(sanitizedData.Item1, Formatting.Indented), JsonConvert.SerializeObject(parsedInfobox, Formatting.Indented));
+        // var jdp = new JsonDiffPatch();
+        // string? diff = jdp.Diff(JsonConvert.SerializeObject(sanitizedData.Item1, Formatting.Indented), JsonConvert.SerializeObject(parsedInfobox, Formatting.Indented));
 
         // if (!string.IsNullOrEmpty(diff))
         //     Console.WriteLine($"Diff:\n{diff}");
@@ -197,7 +197,7 @@ public partial class ShipUpdater(MwClient bot, ApiManager apiManager)
 #endif
     }
 
-    private string GetShipIdentifier(string ship)
+    private static string GetShipIdentifier(string ship)
     {
         string truncatedShipName = ship.Length > MaxLength ? ship[..MaxLength] : ship;
         string paddedShipName = truncatedShipName.PadRight(MaxLength);

@@ -2,7 +2,7 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ketchupbot-updater", "ketchupbot-updater\ketchupbot-updater.csproj", "{0C44F8F8-0A3D-4233-963C-3662246445D7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ketchupbot-updater-tests", "ketchupbot-updater-tests\ketchupbot-updater-tests.csproj", "{BD71F535-72AD-4337-96C6-8A9B0F7B545C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ketchupbot-updater-tests", "ketchupbot-updater-tests\ketchupbot-updater-tests.csproj", "{70DD68ED-11B5-4B76-9663-2CDE5ACC5E5E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -14,9 +14,9 @@ Global
 		{0C44F8F8-0A3D-4233-963C-3662246445D7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0C44F8F8-0A3D-4233-963C-3662246445D7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0C44F8F8-0A3D-4233-963C-3662246445D7}.Release|Any CPU.Build.0 = Release|Any CPU
-		{BD71F535-72AD-4337-96C6-8A9B0F7B545C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{BD71F535-72AD-4337-96C6-8A9B0F7B545C}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{BD71F535-72AD-4337-96C6-8A9B0F7B545C}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{BD71F535-72AD-4337-96C6-8A9B0F7B545C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{70DD68ED-11B5-4B76-9663-2CDE5ACC5E5E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{70DD68ED-11B5-4B76-9663-2CDE5ACC5E5E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{70DD68ED-11B5-4B76-9663-2CDE5ACC5E5E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{70DD68ED-11B5-4B76-9663-2CDE5ACC5E5E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

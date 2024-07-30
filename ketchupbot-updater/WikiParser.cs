@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.RegularExpressions;
+using Newtonsoft.Json.Linq;
 
 namespace ketchupbot_updater;
 
@@ -38,8 +39,12 @@ public static partial class WikiParser
             string symbol = match.Value;
             int index = match.Index;
 
-            // I just want to say to anyone (I guess just me) who is reading this in the future, the reason why we use AsSpan here instead of just Substring is because AsSpan will essentially create a reference to a certain part of the original string, which is more efficient than creating a new string every time we want to get a substring. This saves on memory, so yea.
-            // Though, this entire section should probably be flushed out and rewritten to be more efficient. Can probably use something like StringBuilder to make this more efficient.
+            // I just want to say to anyone (I guess just me) who is reading this in the future, the reason why we use
+            // AsSpan here instead of just Substring is because AsSpan will essentially create a reference to a certain
+            // part of the original string, which is more efficient than creating a new string every time we want to get
+            // a substring. This saves on memory, so yea. Though, this entire section should probably be flushed out and
+            // rewritten to be more efficient. Can probably use something like StringBuilder to make this more
+            // efficient.
 
             switch (symbol)
             {
@@ -116,22 +121,41 @@ public static partial class WikiParser
         return match.Value;
     }
 
+    // TODO: Make this take in a ShipData object instead of a dictionary
     public static Tuple<Dictionary<string, string>, List<string>> MergeData(Dictionary<string, string> newData,
         Dictionary<string, string> oldData)
     {
-        // Clone the old data to avoid modifying the original dictionary
-        var oldDataClone = new Dictionary<string, string>(oldData);
+
+        JObject newDataJObject = JObject.FromObject(newData);
+        JObject oldDataJObject = JObject.FromObject(oldData);
+
+        oldDataJObject.Merge(newDataJObject, new JsonMergeSettings
+        {
+            MergeArrayHandling = MergeArrayHandling.Replace,
+            MergeNullValueHandling = MergeNullValueHandling.Ignore
+        });
+
         var updatedParameters = new List<string>();
 
-        foreach (KeyValuePair<string, string> kvp in newData.Where(kvp =>
-                     !GlobalConfiguration.ParameterExclusions.Contains(kvp.Key)))
+        // To preform this operation, we need to use a dictionary. If the function took in ShipData objects, we would
+        // have to use reflection to get the properties of the object, which is slow. I don't know what the tradeoff is.
+        // Should we stick with dictionaries, or use reflection here? I honestly want to avoid using Dictionaries
+        // because I enjoy the type checking, but if it's going to make this a lot slower, I'll have to rethink my
+        // motivations. I'll keep it as a dictionary until I make a decision.
+        foreach (KeyValuePair<string, string> kvp in newData)
         {
-            oldDataClone[kvp.Key] = kvp.Value;
-            if (oldDataClone[kvp.Key] != oldData.GetValueOrDefault(kvp.Key)) updatedParameters.Add(kvp.Key);
+            // If the key is in the parameter exclusions list, skip it. If the key is not in the old data, or the value is different, add it to the updated parameters list
+            if (!GlobalConfiguration.ParameterExclusions.Contains(kvp.Key) && (!oldData.TryGetValue(kvp.Key, out string? oldValue) || oldValue != kvp.Value))
+            {
+                updatedParameters.Add(kvp.Key);
+            }
         }
 
-        Dictionary<string, string> sortedData =
-            oldDataClone.OrderBy(kvp => kvp.Key).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+        var mergedData = oldDataJObject.ToObject<Dictionary<string, string>>();
+
+        if (mergedData == null) throw new Exception("Failed to merge data");
+
+        Dictionary<string, string> sortedData = mergedData.OrderBy(kvp => kvp.Key).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 
         return new Tuple<Dictionary<string, string>, List<string>>(sortedData, updatedParameters);
     }

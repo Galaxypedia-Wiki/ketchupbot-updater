@@ -30,6 +30,7 @@ public class MwClient
 
         Client.DefaultRequestHeaders.Add("User-Agent", "KetchupBot-Updater/1.0");
 
+        // TODO: Change this to not run in the constructor. Some methods can be run without being logged in, such as GetArticle.
         LogIn(username, password).GetAwaiter().GetResult();
     }
 
@@ -78,6 +79,7 @@ public class MwClient
     /// <exception cref="NotImplementedException"></exception>
     public void IsLoggedIn()
     {
+        // This should probably make a call to query userinfo
         throw new NotImplementedException();
     }
 

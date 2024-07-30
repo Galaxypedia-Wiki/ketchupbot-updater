@@ -108,7 +108,15 @@ public partial class ShipUpdater(MwClient bot, ApiManager apiManager)
 
         if (IGNORE_FLAG_REGEX().IsMatch(article.ToLower())) throw new Exception("Found ignore flag in article");
 
-        // TODO: I think I can probably come up with a better way to do this. The current way of converting the data to a dictionary and then back to a dictionary is a bit silly. I can probably just use the data object directly, and merge the two objects together somehow. This way we don't have to resort to using Dictionary<string, string> for everything and can use the actual data object which is more strongly typed.
+        // I think I can probably come up with a better way to do this. The current way of converting the data to a
+        // dictionary and then back to a dictionary is a bit silly. I can probably just use the data object directly,
+        // and merge the two objects together somehow. This way we don't have to resort to using Dictionary<string,
+        // string> for everything and can use the actual data object which is more strongly typed. The hard part is
+        // going to be figuring out how to merge the two objects together. There isn't really a way to enumerate over
+        // the properties of an object in C# without using reflection, which is slow. If I went that route, I could
+        // probably use reflection to get the properties of the object and then use that to merge the two objects
+        // together, but it'll probably have a performance impact. I'll have to think about this a bit more. Also,
+        // probably a good idea to read the comment in WikiParser.cs about this
 
         #region Infobox Parsing Logic
 #if DEBUG
@@ -136,6 +144,11 @@ public partial class ShipUpdater(MwClient bot, ApiManager apiManager)
 #if DEBUG
         mergeDataStart.Stop();
         Logger.Log($"{GetShipIdentifier(ship)} Merged data in {mergeDataStart.ElapsedMilliseconds}ms", style: LogStyle.Checkmark);
+        // JsonSerializerSettings settings = new()
+        // {
+        //     NullValueHandling = NullValueHandling.Ignore
+        // };
+        // Console.WriteLine(JsonConvert.SerializeObject(mergedData.Item1, Formatting.Indented, settings));
 #endif
         #endregion
 
@@ -193,10 +206,15 @@ public partial class ShipUpdater(MwClient bot, ApiManager apiManager)
 #if DEBUG
         updateStart.Stop();
         Logger.Log($"{GetShipIdentifier(ship)} Updated ship in {updateStart.ElapsedMilliseconds}ms", style: LogStyle.Checkmark);
-        Logger.Log($"{GetShipIdentifier(ship)} Current thread pool count: {ThreadPool.ThreadCount}");
+        Logger.Log($"Current thread pool count: {ThreadPool.ThreadCount}");
 #endif
     }
 
+    /// <summary>
+    /// Used to get a ship identifier for logging purposes. I'm pretty sure this only runs in debug mode, so it should be okay to have the overhead from the string formatting.
+    /// </summary>
+    /// <param name="ship"></param>
+    /// <returns></returns>
     private static string GetShipIdentifier(string ship)
     {
         string truncatedShipName = ship.Length > MaxLength ? ship[..MaxLength] : ship;

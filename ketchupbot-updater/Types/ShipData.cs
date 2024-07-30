@@ -1,4 +1,3 @@
-using System.Globalization;
 using Newtonsoft.Json;
 
 namespace ketchupbot_updater.Types;
@@ -6,6 +5,7 @@ namespace ketchupbot_updater.Types;
 /// <summary>
 /// A record representing a ship's data
 /// </summary>
+/// NOTE: THIS CLASS DOES NOT INCLUDE SPINAL INFO YET!
 public class ShipData
 {
     [JsonProperty("title")]

@@ -103,18 +103,18 @@ public static class Program
 
             await scheduler.Start();
 
-            var mwClient = new MwClient(configuration["MWUSERNAME"] ?? throw new InvalidOperationException(),
-                configuration["MWPASSWORD"] ?? throw new InvalidOperationException());
+            var mwClient = new MwClient(configuration["MWUSERNAME"] ?? throw new Exception(),
+                configuration["MWPASSWORD"] ?? throw new Exception());
             Logger.Log("Logged into the Galaxypedia", style: LogStyle.Checkmark);
             var apiManager = new ApiManager("https://api.info.galaxy.casa",
-                configuration["GIAPI_TOKEN"] ?? throw new InvalidOperationException());
+                configuration["GIAPI_TOKEN"] ?? throw new Exception());
 
             // TODO: Probably should refactor this logic. We kinda repeat ourselves here. It'd be better to move the job
             // creation logic outside of the if statements, and instead use the if statements for defining triggers. For
             // example, if the user doesn't specify a cron schedule, we can still use the Job to run the methods via
             // StartNow. Like a fire & forget. So we should probably remove the logic at the end of this method that
             // runs the one-off logic, and instead use the jobs for one-off logic. Though, this might not be possible
-            // for running for individual ships
+            // for running for individual ships.
 
             string? shipScheduleOptionValue = handler.ParseResult.GetValueForOption(shipScheduleOption);
             string? turretScheduleOptionValue = handler.ParseResult.GetValueForOption(turretScheduleOption);

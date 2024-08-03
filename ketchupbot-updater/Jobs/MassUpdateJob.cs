@@ -15,5 +15,10 @@ public class MassUpdateJob : IJob
         // think we'd be able to catch any errors further up in the call stack. Not sure though, so I'll leave it for
         // now until I make a decision.
         await shipUpdater.UpdateAllShips();
+
+        Console.WriteLine("Mass update job completed");
+        if (context.NextFireTimeUtc != null)
+            Console.WriteLine("Next update is scheduled for " + context.NextFireTimeUtc.Value.LocalDateTime);
     }
+
 }

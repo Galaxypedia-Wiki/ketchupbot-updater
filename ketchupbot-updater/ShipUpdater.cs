@@ -48,7 +48,7 @@ public partial class ShipUpdater(MwClient bot, ApiManager apiManager)
     }
 
     /// <summary>
-    /// Wrapper for UpdateShip that catches exceptions and logs them instead of throwing them
+    /// Wrapper for UpdateShip that catches exceptions and logs them instead of throwing them.
     /// </summary>
     /// <param name="ship"></param>
     /// <param name="data"></param>

@@ -109,6 +109,8 @@ public static class Program
             var apiManager = new ApiManager("https://api.info.galaxy.casa",
                 configuration["GIAPI_TOKEN"] ?? throw new Exception());
 
+            #region Scheduling Logic
+
             // TODO: Probably should refactor this logic. We kinda repeat ourselves here. It'd be better to move the job
             // creation logic outside of the if statements, and instead use the if statements for defining triggers. For
             // example, if the user doesn't specify a cron schedule, we can still use the Job to run the methods via
@@ -138,6 +140,7 @@ public static class Program
 
                     await scheduler.ScheduleJob(massUpdateJob, massUpdateTrigger);
                     Console.WriteLine("Scheduled ship mass update job");
+                    Console.WriteLine($"Next update is scheduled for {massUpdateTrigger.GetNextFireTimeUtc()?.ToLocalTime()}");
                 }
 
                 if (turretScheduleOptionValue != null)
@@ -162,6 +165,8 @@ public static class Program
                 // Keep application running until it's manually stopped. The scheduler will never stop by itself.
                 await Task.Delay(-1);
             }
+
+            #endregion
 
             #region Ship Option Handler
 

@@ -56,7 +56,8 @@ public class TurretUpdater(MwClient mwClient, ApiManager apiManager)
         await mwClient.EditArticle("Turrets", newTurretPageWikitext, "Updating turrets");
     }
 
-    // TODO: Maybe in the future provide a way to update a single turret. This isn't really needed right now, so I'm not going to implement it yet. I'll just leave it here until it's needed.
+    // TODO: Maybe in the future provide a way to update a single turret. This isn't really needed right now, so I'm not
+    // going to implement it yet. I'll just leave it here until it's needed.
     public void UpdateTurret(string turretName, TurretData turretData)
     {
         throw new NotImplementedException();

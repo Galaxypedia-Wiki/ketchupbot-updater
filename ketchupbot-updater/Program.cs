@@ -109,31 +109,64 @@ public static class Program
             var apiManager = new ApiManager("https://api.info.galaxy.casa",
                 configuration["GIAPI_TOKEN"] ?? throw new InvalidOperationException());
 
+            // TODO: Probably should refactor this logic. We kinda repeat ourselves here. It'd be better to move the job
+            // creation logic outside of the if statements, and instead use the if statements for defining triggers. For
+            // example, if the user doesn't specify a cron schedule, we can still use the Job to run the methods via
+            // StartNow. Like a fire & forget. So we should probably remove the logic at the end of this method that
+            // runs the one-off logic, and instead use the jobs for one-off logic. Though, this might not be possible
+            // for running for individual ships
+
             string? shipScheduleOptionValue = handler.ParseResult.GetValueForOption(shipScheduleOption);
             string? turretScheduleOptionValue = handler.ParseResult.GetValueForOption(turretScheduleOption);
 
-            if (shipScheduleOptionValue != null)
+            if (shipScheduleOptionValue != null || turretScheduleOptionValue != null)
             {
-                IJobDetail massUpdateJob = JobBuilder.Create<MassUpdateJob>()
-                    .WithIdentity("massUpdateJob", "group1")
-                    .Build();
+                if (shipScheduleOptionValue != null)
+                {
+                    IJobDetail massUpdateJob = JobBuilder.Create<MassUpdateJob>()
+                        .WithIdentity("massUpdateJob", "group1")
+                        .Build();
 
-                massUpdateJob.JobDataMap.Put("shipUpdater", new ShipUpdater(mwClient, apiManager));
+                    massUpdateJob.JobDataMap.Put("shipUpdater", new ShipUpdater(mwClient, apiManager));
 
-                ITrigger massUpdateTrigger = TriggerBuilder.Create()
-                    .WithIdentity("massUpdateTrigger", "group1")
-                    .ForJob("massUpdateJob", "group1")
-                    .StartNow()
-                    .WithCronSchedule(shipScheduleOptionValue)
-                    .Build();
+                    ITrigger massUpdateTrigger = TriggerBuilder.Create()
+                        .WithIdentity("massUpdateTrigger", "group1")
+                        .ForJob("massUpdateJob", "group1")
+                        .StartNow()
+                        .WithCronSchedule(shipScheduleOptionValue)
+                        .Build();
 
-                await scheduler.ScheduleJob(massUpdateJob, massUpdateTrigger);
+                    await scheduler.ScheduleJob(massUpdateJob, massUpdateTrigger);
+                    Console.WriteLine("Scheduled ship mass update job");
+                }
+
+                if (turretScheduleOptionValue != null)
+                {
+                    IJobDetail turretUpdateJob = JobBuilder.Create<TurretUpdateJob>()
+                        .WithIdentity("turretUpdateJob", "group1")
+                        .Build();
+
+                    turretUpdateJob.JobDataMap.Put("turretUpdater", new TurretUpdater(mwClient, apiManager));
+
+                    ITrigger turretUpdateTrigger = TriggerBuilder.Create()
+                        .WithIdentity("turretUpdateTrigger", "group1")
+                        .ForJob("turretUpdateJob", "group1")
+                        .StartNow()
+                        .WithCronSchedule(turretScheduleOptionValue)
+                        .Build();
+
+                    await scheduler.ScheduleJob(turretUpdateJob, turretUpdateTrigger);
+                    Console.WriteLine("Scheduled turret update job");
+                }
+
+                // Keep application running until it's manually stopped. The scheduler will never stop by itself.
+                await Task.Delay(-1);
             }
 
             #region Ship Option Handler
 
             string[]? shipsOptionValue = handler.ParseResult.GetValueForOption(shipsOption);
-            if (shipsOptionValue != null && shipsOptionValue.First() != "none")
+            if (shipsOptionValue != null && shipsOptionValue.First() != "none" && shipScheduleOptionValue == null)
             {
                 var shipUpdater = new ShipUpdater(mwClient, apiManager);
 
@@ -141,10 +174,9 @@ public static class Program
                     await shipUpdater.UpdateAllShips();
                 else
                 {
-                    foreach (string ship in shipsOptionValue)
-                    {
-                        await shipUpdater.UpdateShip(ship);
-                    }
+                    List<Task> tasks = shipsOptionValue.Select(ship => shipUpdater.UpdateShip(ship)).ToList();
+
+                    await Task.WhenAll(tasks);
                 }
             }
 

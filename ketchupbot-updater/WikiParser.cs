@@ -121,7 +121,6 @@ public static partial class WikiParser
         return match.Value;
     }
 
-    // TODO: Make this take in a ShipData object instead of a dictionary
     public static Tuple<Dictionary<string, string>, List<string>> MergeData(Dictionary<string, string> newData,
         Dictionary<string, string> oldData)
     {

@@ -53,6 +53,12 @@ public static class Program
             getDefaultValue: () => 0,
             "Number of threads to use when updating ships. Set to 1 for singlethreaded, 0 for automatic (let the the .NET runtime decide the thread count)");
 
+        var secretsDirectoryOption = new Option<string>(
+            "--secrets-directory",
+            getDefaultValue: () => AppContext.BaseDirectory,
+            "Directory where the appsettings.json file is located. Defaults to the directory holding the executable."
+        );
+
         #endregion
 
         var rootCommand = new RootCommand("KetchupBot Updater Component")
@@ -82,18 +88,17 @@ public static class Program
             #region Configuration
 
             IConfigurationBuilder builder = new ConfigurationBuilder()
-                .SetBasePath(AppContext.BaseDirectory)
+                .SetBasePath(handler.ParseResult.GetValueForOption(secretsDirectoryOption) ?? AppContext.BaseDirectory)
                 .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
                 .AddEnvironmentVariables();
 
             IConfigurationRoot configuration = builder.Build();
 
-#if !DEBUG
-            Production = true;
-            DryRun = handler.ParseResult.GetValueForOption(dryRunOption);
-#else
+#if DEBUG
             Console.WriteLine("Running in development mode");
             DryRun = true;
+#else
+            DryRun = handler.ParseResult.GetValueForOption(dryRunOption);
 #endif
 
             #endregion
@@ -103,11 +108,11 @@ public static class Program
 
             await scheduler.Start();
 
-            var mwClient = new MwClient(configuration["MWUSERNAME"] ?? throw new Exception(),
-                configuration["MWPASSWORD"] ?? throw new Exception());
+            var mwClient = new MwClient(configuration["MWUSERNAME"] ?? throw new InvalidOperationException(),
+                configuration["MWPASSWORD"] ?? throw new InvalidOperationException());
             Logger.Log("Logged into the Galaxypedia", style: LogStyle.Checkmark);
-            var apiManager = new ApiManager("https://api.info.galaxy.casa",
-                configuration["GIAPI_TOKEN"] ?? throw new Exception());
+            var apiManager = new ApiManager(configuration["GIAPI_URL"] ?? throw new InvalidOperationException(),
+                configuration["GIAPI_TOKEN"] ?? throw new InvalidOperationException());
 
             #region Scheduling Logic
 

@@ -8,6 +8,7 @@
         <Nullable>enable</Nullable>
         <Title>ketchupbot-updater</Title>
         <Authors>smallketchup82</Authors>
+        <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     </PropertyGroup>
 
     <ItemGroup>
@@ -28,10 +29,15 @@
     </ItemGroup>
 
     <ItemGroup>
-      <None Remove="Assets\banner.txt" />
       <EmbeddedResource Include="Assets\banner.txt">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </EmbeddedResource>
+    </ItemGroup>
+
+    <ItemGroup>
+      <Content Include="..\.dockerignore">
+        <Link>.dockerignore</Link>
+      </Content>
     </ItemGroup>
 
 </Project>

@@ -4,7 +4,6 @@ using Newtonsoft.Json.Linq;
 
 namespace ketchupbot_updater;
 
-
 /// <summary>
 /// Class that contains methods for parsing and manipulating wikitext & ship infobox json's
 /// </summary>
@@ -127,9 +126,12 @@ public static partial class WikiParser
     public static Tuple<Dictionary<string, string>, List<string>> MergeData(Dictionary<string, string> newData,
         Dictionary<string, string> oldData)
     {
-
         JObject newDataJObject = JObject.FromObject(newData);
         JObject oldDataJObject = JObject.FromObject(oldData);
+
+        // Remove excluded parameters from the new data
+        foreach (string parameter in GlobalConfiguration.ParameterExclusions)
+            newDataJObject.Remove(parameter);
 
         oldDataJObject.Merge(newDataJObject, new JsonMergeSettings
         {
@@ -139,25 +141,19 @@ public static partial class WikiParser
 
         var updatedParameters = new List<string>();
 
-        // To preform this operation, we need to use a dictionary. If the function took in ShipData objects, we would
-        // have to use reflection to get the properties of the object, which is slow. I don't know what the tradeoff is.
-        // Should we stick with dictionaries, or use reflection here? I honestly want to avoid using Dictionaries
-        // because I enjoy the type checking, but if it's going to make this a lot slower, I'll have to rethink my
-        // motivations. I'll keep it as a dictionary until I make a decision.
         foreach (KeyValuePair<string, string> kvp in newData)
         {
             // If the key is in the parameter exclusions list, skip it. If the key is not in the old data, or the value is different, add it to the updated parameters list
-            if (!GlobalConfiguration.ParameterExclusions.Contains(kvp.Key) && (!oldData.TryGetValue(kvp.Key, out string? oldValue) || oldValue != kvp.Value))
-            {
-                updatedParameters.Add(kvp.Key);
-            }
+            if (!GlobalConfiguration.ParameterExclusions.Contains(kvp.Key) &&
+                (!oldData.TryGetValue(kvp.Key, out string? oldValue) || oldValue != kvp.Value)) updatedParameters.Add(kvp.Key);
         }
 
         var mergedData = oldDataJObject.ToObject<Dictionary<string, string>>();
 
         if (mergedData == null) throw new Exception("Failed to merge data");
 
-        Dictionary<string, string> sortedData = mergedData.OrderBy(kvp => kvp.Key).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+        Dictionary<string, string> sortedData =
+            mergedData.OrderBy(kvp => kvp.Key).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 
         return new Tuple<Dictionary<string, string>, List<string>>(sortedData, updatedParameters);
     }
@@ -165,6 +161,16 @@ public static partial class WikiParser
     /// <summary>
     /// Sanitize data
     /// </summary>
+    /// <remarks>
+    /// Applies the following to the string:
+    /// - Newlines in description are replaced with spaces
+    /// - If the value of the parameter is a double, and the decimal is a zero, then remove it (i.e. 1.0 -> 1)
+    /// - If the value of the parameter is a double, and the decimal is not a zero, then add another zero to it (i.e. 0.2 -> 0.20)
+    /// - If the key exists in the global ist of parameters to not delete if the value is no, and the value is no, then skip it
+    /// - If the key exists in the global list of parameters to delete if the value is yes, and the value is yes, then skip it
+    /// - If the value is a number, try to add commas to it
+    /// - Remove the title1 parameter
+    /// </remarks>
     /// <param name="data"></param>
     /// <param name="oldData"></param>
     /// <returns></returns>
@@ -184,27 +190,30 @@ public static partial class WikiParser
                 (value.Equals("yes", StringComparison.OrdinalIgnoreCase) &&
                  GlobalConfiguration.ParametersToDeleteIfValueIsYes.Contains(key)))
             {
-                if (oldData.ContainsKey(key))
-                {
-                    removedParameters.Add(key);
-                }
-
+                if (oldData.ContainsKey(key)) removedParameters.Add(key);
                 continue;
             }
 
-            if (key == "description")
+            // Convert doubles that are non-zero, but have a zero decimal to an integer. So 1.0 becomes 1. But convert 0.2 to 0.20
+            if (double.TryParse(value, out double doubleValue)) value = doubleValue.ToString(doubleValue % 1 == 0 ? "N0" : "N2");
+
+            // Check if the value is a number, and try to add commas to it. But only for integers, not doubles, to not override what we did above. Also don't do it for the title key
+            if (int.TryParse(value, out int intValue) && key != "title") value = intValue.ToString("N0");
+
+            switch (key)
             {
-                value = value.Replace("\n", " ");
+                // Remove the title1 parameter
+                case "title1":
+                    continue;
+                // If the title parameter doesn't start with "The ", add it
+                case "title" when !value.StartsWith("The ", StringComparison.CurrentCultureIgnoreCase):
+                    value = "The " + value;
+                    break;
+                case "description":
+                    // Get rid of newlines in the description parameter
+                    value = value.Replace("\n", " ");
+                    break;
             }
-
-            // Check if the value is a double, and if the decimal is a zero, remove it. Essentially converting 1.0 to 1
-            if (double.TryParse(value, out double doubleValue)) value = doubleValue.ToString("G0");
-
-            // Check if the value is a number, and try to add commas to it
-            if (int.TryParse(value, out int intValue)) value = intValue.ToString("N0");
-
-            // Remove the title1 parameter
-            if (key == "title1") continue;
 
             sanitizedData[key] = value;
         }
@@ -222,10 +231,14 @@ public static partial class WikiParser
         var sb = new StringBuilder();
 
         sb.AppendLine("{{Ship Infobox");
-        foreach (KeyValuePair<string,string> keyValuePair in data) sb.AppendLine($"|{keyValuePair.Key} = {keyValuePair.Value}");
+        foreach (KeyValuePair<string, string> keyValuePair in data)
+            sb.AppendLine($"|{keyValuePair.Key} = {keyValuePair.Value}");
         sb.AppendLine("}}");
 
-        return sb.ToString();
+        // Replace $ with $$ to escape the $ character
+        sb.Replace("$", "$$");
+
+        return sb.ToString().Trim();
     }
 
 

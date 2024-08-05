@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Text.RegularExpressions;
 using ketchupbot_updater.API;
+using Newtonsoft.Json;
 
 namespace ketchupbot_updater;
 
@@ -132,11 +133,6 @@ public partial class ShipUpdater(MwClient bot, ApiManager apiManager)
 #if DEBUG
         mergeDataStart.Stop();
         Logger.Log($"{GetShipIdentifier(ship)} Merged data in {mergeDataStart.ElapsedMilliseconds}ms", style: LogStyle.Checkmark);
-        // JsonSerializerSettings settings = new()
-        // {
-        //     NullValueHandling = NullValueHandling.Ignore
-        // };
-        // Console.WriteLine(JsonConvert.SerializeObject(mergedData.Item1, Formatting.Indented, settings));
 #endif
         #endregion
 
@@ -154,8 +150,15 @@ public partial class ShipUpdater(MwClient bot, ApiManager apiManager)
         #endregion
 
         #region Diffing logic
-        // This logic is only for debugging/development instances to see what changes are being made to the infobox. It is not necessary for the bot to function, so it should not be in production.
-        // I've turned it off cuz its kinda annoying
+        if (JsonConvert.SerializeObject(sanitizedData.Item1) == JsonConvert.SerializeObject(parsedInfobox))
+        {
+            Logger.Log($"{GetShipIdentifier(ship)} No changes detected, skipping...", style: LogStyle.Warning);
+            return;
+        }
+
+        // The below logic is only for debugging/development instances to see what changes are being made to the infobox. It is not necessary for the bot to function, so it should not be in production.
+        // I've turned it off cuz its kinda annoying.
+        // Might add a CLI argument to enable it later.
 #if DEBUG
         // var jdp = new JsonDiffPatch();
         // string? diff = jdp.Diff(JsonConvert.SerializeObject(sanitizedData.Item1, Formatting.Indented), JsonConvert.SerializeObject(parsedInfobox, Formatting.Indented));

@@ -17,7 +17,8 @@ public static class GlobalConfiguration
     public static List<string> ParameterExclusions { get; } =
     [
         "damage_res",
-        "loyalty"
+        "loyalty",
+        "version_added"
     ];
 
     /// <summary>

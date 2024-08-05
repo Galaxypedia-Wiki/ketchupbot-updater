@@ -18,8 +18,8 @@ importers:
         specifier: ^1.6.8
         version: 1.6.8
       axios-retry:
-        specifier: ^4.1.0
-        version: 4.1.0(axios@1.6.8)
+        specifier: ^4.5.0
+        version: 4.5.0(axios@1.6.8)
       chalk:
         specifier: ^4.1.2
         version: 4.1.2
@@ -743,8 +743,8 @@ packages:
   aws4@1.12.0:
     resolution: {integrity: sha512-NmWvPnx0F1SfrQbYwOi7OeaNGokp9XhzNioJ/CSBs8Qa4vxug81mhJEAVZwxXuBmYB5KDRfMq/F3RR0BIU7sWg==}
 
-  axios-retry@4.1.0:
-    resolution: {integrity: sha512-svdth4H00yhlsjBbjfLQ/sMLkXqeLxhiFC1nE1JtkN/CIssGxqk0UwTEdrVjwA2gr3yJkAulwvDSIm4z4HyPvg==}
+  axios-retry@4.5.0:
+    resolution: {integrity: sha512-aR99oXhpEDGo0UuAlYcn2iGRds30k366Zfa05XWScR9QaQD4JYiP3/1Qt1u7YlefUOK+cn0CcwoL1oefavQUlQ==}
     peerDependencies:
       axios: 0.x || 1.x
 
@@ -2940,7 +2940,7 @@ snapshots:
 
   aws4@1.12.0: {}
 
-  axios-retry@4.1.0(axios@1.6.8):
+  axios-retry@4.5.0(axios@1.6.8):
     dependencies:
       axios: 1.6.8
       is-retry-allowed: 2.2.0

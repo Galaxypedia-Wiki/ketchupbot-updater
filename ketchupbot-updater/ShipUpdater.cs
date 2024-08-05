@@ -183,6 +183,7 @@ public partial class ShipUpdater(MwClient bot, ApiManager apiManager)
         var articleEditStart = Stopwatch.StartNew();
 #endif
 
+        // TODO: Make the edit summary more descriptive. Add in added, changed, and removed parameters.
         await bot.EditArticle(ship, newWikitext, "Automated ship data update");
 
 #if DEBUG

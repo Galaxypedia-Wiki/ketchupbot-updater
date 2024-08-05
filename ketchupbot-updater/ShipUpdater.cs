@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using System.Text.RegularExpressions;
 using ketchupbot_updater.API;
-using Newtonsoft.Json;
 
 namespace ketchupbot_updater;
 
@@ -75,7 +74,7 @@ public partial class ShipUpdater(MwClient bot, ApiManager apiManager)
     /// </summary>
     /// <param name="ship">The name of the ship to update</param>
     /// <param name="data">Supply a <see cref="Dictionary{TKey,TValue}"/> to use for updating. If left null, it will be fetched for you, but this is very bandwidth intensive for mass updating. It is better to grab it beforehand, filter the data for the specific <see cref="Dictionary{TKey,TValue}"/> needed, and pass that to the functions.</param>
-    public async Task UpdateShip(string ship, Dictionary<string, string>? data = null)
+    private async Task UpdateShip(string ship, Dictionary<string, string>? data = null)
     {
         ship = GetShipName(ship);
 

@@ -1,5 +1,4 @@
 ﻿using System.CommandLine;
-using System.Diagnostics;
 using System.Reflection;
 using ketchupbot_updater.API;
 using ketchupbot_updater.Jobs;
@@ -101,15 +100,11 @@ public static class Program
             DryRun = true;
 #else
             DryRun = handler.ParseResult.GetValueForOption(dryRunOption);
+            if (DryRun) Console.WriteLine("Running in dry run mode");
 #endif
 
 
             #endregion
-
-            var schedulerFactory = new StdSchedulerFactory();
-            IScheduler scheduler = await schedulerFactory.GetScheduler();
-
-            await scheduler.Start();
 
             var mwClient = new MwClient(configuration["MWUSERNAME"] ?? throw new InvalidOperationException(),
                 configuration["MWPASSWORD"] ?? throw new InvalidOperationException());
@@ -130,6 +125,9 @@ public static class Program
 
             if (shipScheduleOptionValue != null || turretScheduleOptionValue != null)
             {
+                IScheduler scheduler = await new StdSchedulerFactory().GetScheduler();
+                await scheduler.Start();
+
                 if (shipScheduleOptionValue != null)
                 {
                     IJobDetail massUpdateJob = JobBuilder.Create<MassUpdateJob>()

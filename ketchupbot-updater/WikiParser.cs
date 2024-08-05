@@ -250,6 +250,11 @@ public static partial class WikiParser
     /// <returns></returns>
     public static string ReplaceInfobox(string text, string infobox) => SHIP_INFOBOX_REGEX().Replace(text, infobox);
 
+    public static bool CheckIfInfoboxesChanged(Dictionary<string, string> oldData, Dictionary<string, string> newData)
+    {
+        return !oldData.OrderBy(pair => pair.Key).SequenceEqual(newData.OrderBy(pair => pair.Key));
+    }
+
     /// <summary>
     ///
     /// </summary>

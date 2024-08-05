@@ -86,8 +86,8 @@ public class MwClient
 
     public async Task<string> GetArticle(string title)
     {
-
-        using HttpResponseMessage response = await Client.GetAsync($"{_baseUrl}?action=query&format=json&prop=revisions&titles={HttpUtility.UrlEncode(title)}&rvslots=*&rvprop=content&formatversion=2");
+        using HttpResponseMessage response = await Client.GetAsync(
+            $"{_baseUrl}?action=query&format=json&prop=revisions&titles={HttpUtility.UrlEncode(title)}&rvslots=*&rvprop=content&formatversion=2");
 
         response.EnsureSuccessStatusCode();
 
@@ -95,23 +95,24 @@ public class MwClient
 
         dynamic? data = JsonConvert.DeserializeObject<dynamic>(jsonResponse);
 
-        // TODO: Fix the code duplication here
+        return ExtractPageContent(data) ?? throw new InvalidOperationException("Failed to fetch article");
+    }
 
-        string? pageContent = null;
+    private static string? ExtractPageContent(dynamic? data)
+    {
+        if (data == null)
+            return null;
 
-        if (data?.query?.pages == null || data?.query.pages.Count <= 0)
-            return pageContent ?? throw new InvalidOperationException("Failed to fetch article");
+        if (data.query?.pages == null || data.query.pages.Count <= 0)
+            return null;
 
-        dynamic? page = data?.query.pages[0];
+        dynamic? page = data.query.pages[0];
 
         if (page?.revisions == null || page?.revisions.Count <= 0)
-            return pageContent ?? throw new InvalidOperationException("Failed to fetch article");
+            return null;
 
         dynamic? revision = page?.revisions[0];
-
-        if (revision?.slots?.main != null) pageContent = revision.slots.main.content;
-
-        return pageContent ?? throw new InvalidOperationException("Failed to fetch article");
+        return revision?.slots?.main?.content;
     }
 
     public async Task<bool> EditArticle(string title, string newContent, string summary)

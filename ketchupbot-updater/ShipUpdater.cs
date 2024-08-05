@@ -51,10 +51,13 @@ public partial class ShipUpdater(MwClient bot, ApiManager apiManager)
 #if DEBUG
                 var updateStart = Stopwatch.StartNew();
 #endif
+                Logger.Log($"{GetShipIdentifier(ship)} Updating ship...", style: LogStyle.Progress);
                 await UpdateShip(ship, shipDatas.GetValueOrDefault(ship));
 #if DEBUG
                 updateStart.Stop();
                 Logger.Log($"{GetShipIdentifier(ship)} Updated ship in {updateStart.ElapsedMilliseconds}ms", style: LogStyle.Checkmark);
+#else
+                Logger.Log($"{GetShipIdentifier(ship)} Updated ship", style: LogStyle.Checkmark);
 #endif
             }
             catch (Exception e)
@@ -93,7 +96,6 @@ public partial class ShipUpdater(MwClient bot, ApiManager apiManager)
         }
         #endregion
 
-        Logger.Log($"{GetShipIdentifier(ship)} Updating ship...", style: LogStyle.Progress);
 
         #region Article Fetch Logic
 #if DEBUG
@@ -150,11 +152,8 @@ public partial class ShipUpdater(MwClient bot, ApiManager apiManager)
         #endregion
 
         #region Diffing logic
-        if (JsonConvert.SerializeObject(sanitizedData.Item1) == JsonConvert.SerializeObject(parsedInfobox))
-        {
-            Logger.Log($"{GetShipIdentifier(ship)} No changes detected, skipping...", style: LogStyle.Warning);
-            return;
-        }
+        if (!WikiParser.CheckIfInfoboxesChanged(sanitizedData.Item1, parsedInfobox))
+            throw new Exception("No changes detected");
 
         // The below logic is only for debugging/development instances to see what changes are being made to the infobox. It is not necessary for the bot to function, so it should not be in production.
         // I've turned it off cuz its kinda annoying.

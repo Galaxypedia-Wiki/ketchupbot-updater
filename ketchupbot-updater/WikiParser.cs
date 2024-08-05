@@ -5,6 +5,9 @@ using Newtonsoft.Json.Linq;
 namespace ketchupbot_updater;
 
 
+/// <summary>
+/// Class that contains methods for parsing and manipulating wikitext & ship infobox json's
+/// </summary>
 public static partial class WikiParser
 {
     #region Regexes
@@ -224,6 +227,7 @@ public static partial class WikiParser
 
         return sb.ToString();
     }
+
 
     /// <summary>
     ///

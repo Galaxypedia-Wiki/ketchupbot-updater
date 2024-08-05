@@ -1,4 +1,5 @@
 ﻿using System.CommandLine;
+using System.Diagnostics;
 using System.Reflection;
 using ketchupbot_updater.API;
 using ketchupbot_updater.Jobs;
@@ -35,7 +36,7 @@ public static class Program
 
         var shipScheduleOption = new Option<string>(
             ["-ss", "--ship-schedule"],
-            "Pass a schedule (in cron format) to enable the ship scheduler. Can pass Will ignore --ships option. This takes precedence over the environment variable"
+            "Pass a schedule (in cron format specialized for quartz) to enable the ship scheduler. Use https://www.freeformatter.com/cron-expression-generator-quartz.html to generate a cron expression. Can pass Will ignore --ships option. This takes precedence over the environment variable"
         );
 
         var turretScheduleOption = new Option<string>(
@@ -51,7 +52,7 @@ public static class Program
         var threadCountOption = new Option<int>(
             "--threads",
             getDefaultValue: () => 0,
-            "Number of threads to use when updating ships. Set to 1 for singlethreaded, 0 for automatic (let the the .NET runtime decide the thread count)");
+            "Number of threads to use when updating ships. Set to 1 for single threaded execution, 0 for automatic (let the the .NET runtime manage the thread count dynamically).");
 
         var secretsDirectoryOption = new Option<string>(
             "--secrets-directory",
@@ -68,7 +69,8 @@ public static class Program
             shipScheduleOption,
             turretScheduleOption,
             dryRunOption,
-            threadCountOption
+            threadCountOption,
+            secretsDirectoryOption
         };
 
         rootCommand.SetHandler(async handler =>
@@ -83,7 +85,7 @@ public static class Program
             }
 
             Console.WriteLine(
-                $"\nketchupbot-updater | v{Assembly.GetExecutingAssembly().GetName().Version} | {DateTime.Now}\n");
+                $"\nketchupbot-updater | v{Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "Development"} | {DateTime.Now}\n");
 
             #region Configuration
 
@@ -101,6 +103,7 @@ public static class Program
             DryRun = handler.ParseResult.GetValueForOption(dryRunOption);
 #endif
 
+
             #endregion
 
             var schedulerFactory = new StdSchedulerFactory();
@@ -111,8 +114,7 @@ public static class Program
             var mwClient = new MwClient(configuration["MWUSERNAME"] ?? throw new InvalidOperationException(),
                 configuration["MWPASSWORD"] ?? throw new InvalidOperationException());
             Logger.Log("Logged into the Galaxypedia", style: LogStyle.Checkmark);
-            var apiManager = new ApiManager(configuration["GIAPI_URL"] ?? throw new InvalidOperationException(),
-                configuration["GIAPI_TOKEN"] ?? throw new InvalidOperationException());
+            var apiManager = new ApiManager(configuration["GIAPI_URL"] ?? throw new InvalidOperationException());
 
             #region Scheduling Logic
 
@@ -144,8 +146,9 @@ public static class Program
                         .Build();
 
                     await scheduler.ScheduleJob(massUpdateJob, massUpdateTrigger);
-                    Console.WriteLine("Scheduled ship mass update job");
-                    Console.WriteLine($"Next update is scheduled for {massUpdateTrigger.GetNextFireTimeUtc()?.ToLocalTime()}");
+                    Console.WriteLine($"Scheduled ship mass update job for {massUpdateTrigger.GetNextFireTimeUtc()?.ToLocalTime()}");
+                    Console.WriteLine("Running mass update job now...");
+                    await scheduler.TriggerJob(new JobKey("massUpdateJob", "group1"));
                 }
 
                 if (turretScheduleOptionValue != null)
@@ -184,9 +187,7 @@ public static class Program
                     await shipUpdater.UpdateAllShips();
                 else
                 {
-                    List<Task> tasks = shipsOptionValue.Select(ship => shipUpdater.UpdateShip(ship)).ToList();
-
-                    await Task.WhenAll(tasks);
+                    await shipUpdater.MassUpdateShips(shipsOptionValue.ToList());
                 }
             }
 

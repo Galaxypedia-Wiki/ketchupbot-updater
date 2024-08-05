@@ -9,6 +9,8 @@
         <Title>ketchupbot-updater</Title>
         <Authors>smallketchup82</Authors>
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+        <AssemblyVersion>4.0.0.0</AssemblyVersion>
+        <FileVersion>4.0.0.0</FileVersion>
     </PropertyGroup>
 
     <ItemGroup>
@@ -29,9 +31,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <EmbeddedResource Include="Assets\banner.txt">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
+      <EmbeddedResource Include="Assets\banner.txt" />
     </ItemGroup>
 
     <ItemGroup>

@@ -1,7 +1,7 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="ketchupbot-updater" type="DotNetProject" factoryName=".NET Project">
     <option name="EXE_PATH" value="$PROJECT_DIR$/ketchupbot-updater/bin/Debug/net8.0/ketchupbot-updater" />
-    <option name="PROGRAM_PARAMETERS" value="-ss &quot;0 * * * * ?&quot;" />
+    <option name="PROGRAM_PARAMETERS" value="--ships all" />
     <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/ketchupbot-updater/bin/Debug/net8.0" />
     <option name="PASS_PARENT_ENVS" value="1" />
     <option name="USE_EXTERNAL_CONSOLE" value="0" />

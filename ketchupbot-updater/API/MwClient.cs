@@ -1,4 +1,5 @@
 using System.Net;
+using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 using System.Web;
@@ -28,7 +29,7 @@ public class MwClient
     {
         _baseUrl = baseUrl;
 
-        Client.DefaultRequestHeaders.Add("User-Agent", "KetchupBot-Updater/1.0");
+        Client.DefaultRequestHeaders.Add("User-Agent", $"KetchupBot-Updater/{Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "1.0"}");
 
         // TODO: Change this to not run in the constructor. Some methods can be run without being logged in, such as GetArticle.
         LogIn(username, password).GetAwaiter().GetResult();

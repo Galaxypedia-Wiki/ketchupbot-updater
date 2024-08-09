@@ -106,10 +106,10 @@ public static class Program
 
             #endregion
 
-            var mwClient = new MwClient(configuration["MWUSERNAME"] ?? throw new InvalidOperationException(),
-                configuration["MWPASSWORD"] ?? throw new InvalidOperationException());
+            var mwClient = new MwClient(configuration["MWUSERNAME"] ?? throw new InvalidOperationException("MWUSERNAME not set"),
+                configuration["MWPASSWORD"] ?? throw new InvalidOperationException("MWPASSWORD not set"));
             Logger.Log("Logged into the Galaxypedia", style: LogStyle.Checkmark);
-            var apiManager = new ApiManager(configuration["GIAPI_URL"] ?? throw new InvalidOperationException());
+            var apiManager = new ApiManager(configuration["GIAPI_URL"] ?? throw new InvalidOperationException("GIAPI_URL not set"));
 
             #region Scheduling Logic
 

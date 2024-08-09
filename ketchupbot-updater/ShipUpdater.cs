@@ -109,7 +109,7 @@ public partial class ShipUpdater(MwClient bot, ApiManager apiManager)
 #endif
         #endregion
 
-        if (IGNORE_FLAG_REGEX().IsMatch(article.ToLower())) throw new Exception("Found ignore flag in article");
+        if (IGNORE_FLAG_REGEX().IsMatch(article.ToLower())) throw new InvalidOperationException("Found ignore flag in article");
 
         #region Infobox Parsing Logic
 #if DEBUG
@@ -152,7 +152,7 @@ public partial class ShipUpdater(MwClient bot, ApiManager apiManager)
 
         #region Diffing logic
         if (!WikiParser.CheckIfInfoboxesChanged(sanitizedData.Item1, parsedInfobox))
-            throw new Exception("No changes detected");
+            throw new InvalidOperationException("No changes detected");
 
         // The below logic is only for debugging/development instances to see what changes are being made to the infobox. It is not necessary for the bot to function, so it should not be in production.
         // I've turned it off cuz its kinda annoying.

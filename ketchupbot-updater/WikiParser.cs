@@ -114,7 +114,7 @@ public static partial class WikiParser
         Match originalGallery = GalleryRegex().Match(text);
 
         if (!originalGallery.Success)
-            throw new Exception("Gallery found in infobox but unable to extract it");
+            throw new InvalidOperationException("Gallery found in infobox but unable to extract it");
 
         infoboxKeyPairs["image"] = originalGallery.Value;
 
@@ -171,7 +171,7 @@ public static partial class WikiParser
 
         var mergedData = oldDataJObject.ToObject<Dictionary<string, string>>();
 
-        if (mergedData == null) throw new Exception("Failed to merge data");
+        if (mergedData == null) throw new InvalidOperationException("Failed to merge data");
 
         Dictionary<string, string> sortedData =
             mergedData.OrderBy(kvp => kvp.Key).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);

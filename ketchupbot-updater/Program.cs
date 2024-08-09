@@ -78,7 +78,7 @@ public static class Program
                              .GetManifestResourceStream("ketchupbot_updater.Assets.banner.txt"))
             {
                 if (stream == null)
-                    throw new Exception("Failed to load banner");
+                    throw new InvalidOperationException("Failed to load banner");
 
                 using (var reader = new StreamReader(stream)) Console.WriteLine(await reader.ReadToEndAsync());
             }

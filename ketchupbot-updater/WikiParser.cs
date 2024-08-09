@@ -86,6 +86,12 @@ public static partial class WikiParser
         return parts;
     }
 
+    /// <summary>
+    /// Parses a ship infobox in wikitext into a dictionary of key-value pairs
+    /// </summary>
+    /// <param name="text">The wikitext input of JUST the template</param>
+    /// <returns>A dictionary of key value pairs. The key is the parameter name, and the value is the parameter value</returns>
+    /// <exception cref="Exception"></exception>
     public static Dictionary<string, string> ParseInfobox(string text)
     {
         if (text.StartsWith("{{") && text.EndsWith("}}")) text = text.Substring(2, text.Length - 4);
@@ -115,14 +121,29 @@ public static partial class WikiParser
         return infoboxKeyPairs;
     }
 
+    /// <summary>
+    /// Extracts the infobox from an entire page
+    /// </summary>
+    /// <param name="text">A page in wikitext</param>
+    /// <returns>A string of just the infobox template, in wikitext format</returns>
+    /// <exception cref="InvalidOperationException">Throws an exception if the infobox cannot be found on the page. This
+    /// likely means that the page lacks an infobox, or has a malformed infobox</exception>
     public static string ExtractInfobox(string text)
     {
         Match match = SHIP_INFOBOX_REGEX().Match(text);
-        if (!match.Success) throw new Exception("No infobox found");
+        if (!match.Success) throw new InvalidOperationException("No infobox found");
 
         return match.Value;
     }
 
+    /// <summary>
+    /// Merges two dictionaries together, and returns a tuple of the merged dictionary, and a list of updated
+    /// parameters. This preforms a two-way merge, where the new data is merged into the old data.
+    /// </summary>
+    /// <param name="newData">The newer data used for updating oldData</param>
+    /// <param name="oldData">The oldData that has the preexisting parameters</param>
+    /// <returns>A tuple. The first item being the merged dictionaries, and the second item being a list of parameters that were updated.</returns>
+    /// <exception cref="Exception"></exception>
     public static Tuple<Dictionary<string, string>, List<string>> MergeData(Dictionary<string, string> newData,
         Dictionary<string, string> oldData)
     {
@@ -171,8 +192,8 @@ public static partial class WikiParser
     /// - If the value is a number, try to add commas to it
     /// - Remove the title1 parameter
     /// </remarks>
-    /// <param name="data"></param>
-    /// <param name="oldData"></param>
+    /// <param name="data">The data to sanitize</param>
+    /// <param name="oldData">The old data pre-merge. Used for tracking removed parameters</param>
     /// <returns></returns>
     public static Tuple<Dictionary<string, string>, List<string>> SanitizeData(Dictionary<string, string> data,
         Dictionary<string, string> oldData)
@@ -224,8 +245,8 @@ public static partial class WikiParser
     /// <summary>
     /// Convert a Dictionary to a wikitext ship infobox
     /// </summary>
-    /// <param name="data"></param>
-    /// <returns></returns>
+    /// <param name="data">The dictionary to convert to wikitext</param>
+    /// <returns>A string with the dictionary but in wikitext</returns>
     public static string ObjectToWikitext(Dictionary<string, string> data)
     {
         var sb = new StringBuilder();
@@ -243,23 +264,28 @@ public static partial class WikiParser
 
 
     /// <summary>
-    ///
+    /// Replace the infobox in a page with a new infobox
     /// </summary>
-    /// <param name="text"></param>
-    /// <param name="infobox"></param>
-    /// <returns></returns>
+    /// <param name="text">The page</param>
+    /// <param name="infobox">The new infobox to replace the old one with</param>
+    /// <returns>The new page wikitext with the replaced infobox. Or the original wikitext if the infobox could not be found.</returns>
     public static string ReplaceInfobox(string text, string infobox) => SHIP_INFOBOX_REGEX().Replace(text, infobox);
 
-    public static bool CheckIfInfoboxesChanged(Dictionary<string, string> oldData, Dictionary<string, string> newData)
-    {
-        return !oldData.OrderBy(pair => pair.Key).SequenceEqual(newData.OrderBy(pair => pair.Key));
-    }
+    /// <summary>
+    /// Check two dictionaries to see if they are different
+    /// </summary>
+    /// <param name="oldData">The old dictionary</param>
+    /// <param name="newData">The new dictionary</param>
+    /// <returns>Whether they differ or not</returns>
+    public static bool
+        CheckIfInfoboxesChanged(Dictionary<string, string> oldData, Dictionary<string, string> newData) =>
+        !oldData.OrderBy(pair => pair.Key).SequenceEqual(newData.OrderBy(pair => pair.Key));
 
     /// <summary>
-    ///
+    /// Extracts turret tables from a page
     /// </summary>
-    /// <param name="text"></param>
-    /// <returns></returns>
+    /// <param name="text">The article to extract from</param>
+    /// <returns>A <see cref="MatchCollection"/> with the turret tables</returns>
     /// <exception cref="Exception"></exception>
     public static MatchCollection ExtractTurretTables(string text)
     {
@@ -267,8 +293,8 @@ public static partial class WikiParser
 
         return turretTables.Count switch
         {
-            0 => throw new Exception("No turret tables found."),
-            > 6 => throw new Exception(
+            0 => throw new InvalidOperationException("No turret tables found."),
+            > 6 => throw new InvalidOperationException(
                 "Irregular number of turret tables found. Please ensure that the number of tables stays at 6 or below."),
             _ => turretTables
         };

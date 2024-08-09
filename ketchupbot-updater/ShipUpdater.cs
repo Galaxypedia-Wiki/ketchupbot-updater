@@ -7,8 +7,8 @@ namespace ketchupbot_updater;
 /// <summary>
 /// Ship updater class to facilitate updating ship pages. You should pass this class to other classes via dependency injection.
 /// </summary>
-/// <param name="bot"></param>
-/// <param name="apiManager"></param>
+/// <param name="bot">The <see cref="MwClient"/> instance to use for interacting with the wiki</param>
+/// <param name="apiManager">The <see cref="ApiManager"/> instance to use for making API requests</param>
 public partial class ShipUpdater(MwClient bot, ApiManager apiManager)
 {
     private static string GetShipName(string data) => GlobalConfiguration.ShipNameMap.GetValueOrDefault(data, data);

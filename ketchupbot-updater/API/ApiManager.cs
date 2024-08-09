@@ -12,7 +12,8 @@ public class ApiManager(string galaxyInfoApi)
 {
     /// <summary>
     /// Cached ship data from the last successful run.
-    /// TODO: This probably isn't enough. We should probably add persistence to this. Might also be wise to have GetShipsData always return the cached value, and only update the cached value once per hour.
+    /// TODO: This probably isn't enough. We should probably add persistence to this. Might also be wise to have
+    /// GetShipsData always return the cached value, and only update the cached value once per hour.
     /// </summary>
     private Dictionary<string, Dictionary<string, string>>? _cachedShipData;
 
@@ -62,6 +63,10 @@ public class ApiManager(string galaxyInfoApi)
         }
     }
 
+    /// <summary>
+    /// Get turret data from the upstream API
+    /// </summary>
+    /// <returns>A dictionary with the turret data</returns>
     public async Task<Dictionary<string, TurretData>?> GetTurretData()
     {
         HttpResponseMessage response = await HttpClient.GetAsync($"{galaxyInfoApi.Trim()}/api/v2/ships-turret/raw");

@@ -3,6 +3,7 @@
     <deployment type="dockerfile">
       <settings>
         <option name="imageTag" value="ketchupbot-updater" />
+        <option name="command" value="-ss &quot;0 0 * ? * * *&quot;" />
         <option name="containerName" value="ketchupbot-updater" />
         <option name="contextFolderPath" value="." />
         <option name="showCommandPreview" value="true" />

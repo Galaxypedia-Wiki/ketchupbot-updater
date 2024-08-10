@@ -115,11 +115,10 @@ public class MwClient
         return revision?.slots?.main?.content;
     }
 
-    public async Task<bool> EditArticle(string title, string newContent, string summary)
+    public async Task EditArticle(string title, string newContent, string summary)
     {
         // If dry run is enabled, don't actually make the edit. Mock success instead.
-        if (Program.DryRun)
-            return true;
+        if (Program.DryRun) return;
 
         // Get MD5 hash of the new content to use for validation
         string newContentHash = BitConverter.ToString(MD5.HashData(Encoding.UTF8.GetBytes(newContent))).Replace("-", "").ToLower();
@@ -149,6 +148,8 @@ public class MwClient
 
         string editJson = await editRequest.Content.ReadAsStringAsync();
         dynamic? editData = JsonConvert.DeserializeObject<dynamic>(editJson);
-        return editData?.edit?.result == "Success";
+
+        if (editData?.edit?.result != "Success")
+            throw new InvalidOperationException("Failed to edit article: " + editData?.edit?.result);
     }
 }

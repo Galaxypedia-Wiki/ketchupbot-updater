@@ -3,7 +3,10 @@ using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 using System.Web;
+using Microsoft.Extensions.Http;
 using Newtonsoft.Json;
+using Polly;
+using Polly.Extensions.Http;
 
 namespace ketchupbot_updater.API;
 
@@ -15,6 +18,17 @@ public class MwClient
         UseCookies = true,
         CookieContainer = new CookieContainer()
     });
+
+    private static readonly HttpClient Client2 =
+        new(new PolicyHttpMessageHandler(HttpPolicyExtensions.HandleTransientHttpError().WaitAndRetryAsync(5,
+            retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt))))
+        {
+            InnerHandler = new HttpClientHandler
+            {
+                UseCookies = true,
+                CookieContainer = new CookieContainer()
+            }
+        });
 
     private readonly string _baseUrl;
 

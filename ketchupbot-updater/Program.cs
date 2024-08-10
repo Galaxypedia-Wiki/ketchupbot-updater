@@ -8,6 +8,7 @@ using Quartz.Impl;
 using Serilog;
 using Serilog.Core;
 using Serilog.Events;
+using Serilog.Sinks.SystemConsole.Themes;
 
 namespace ketchupbot_updater;
 
@@ -86,7 +87,7 @@ public static class Program
         Log.Logger = new LoggerConfiguration()
             .MinimumLevel.ControlledBy(levelSwitch)
             .Enrich.WithThreadId()
-            .WriteTo.Console()
+            .WriteTo.Console(theme: SystemConsoleTheme.Grayscale)
             .CreateLogger();
 
         rootCommand.SetHandler(async handler =>

@@ -55,19 +55,23 @@ public partial class ShipUpdater(MwClient bot, ApiManager apiManager)
                 await UpdateShip(ship, shipDatas.GetValueOrDefault(ship));
 #if DEBUG
                 updateStart.Stop();
-                Log.Information($"{GetShipIdentifier(ship)} Updated ship in {updateStart.ElapsedMilliseconds}ms");
+                Log.Information("{ShipIdentifier)} Updated ship in {UpdateStartElapsedMilliseconds}ms", GetShipIdentifier(ship), updateStart.ElapsedMilliseconds);
 #else
-                Log.Information($"{GetShipIdentifier(ship)} Updated ship");
+                Log.Information("{ShipIdentifier} Updated ship", GetShipIdentifier(ship));
 #endif
+            }
+            catch (ShipAlreadyUpdatedException)
+            {
+                Log.Information("{Identifier} Ship is up-to-date", GetShipIdentifier(ship));
             }
             catch (Exception e)
             {
-                Log.Error(e, $"{GetShipIdentifier(ship)} Failed to update ship");
+                Log.Error(e, "{Identifier} Failed to update ship", GetShipIdentifier(ship));
             }
         });
 
         massUpdateStart.Stop();
-        Log.Information($"Finished updating all ships in {massUpdateStart.ElapsedMilliseconds/1000}s");
+        Log.Information($"Finished updating ships in {massUpdateStart.ElapsedMilliseconds/1000}s");
     }
 
     /// <summary>
@@ -152,7 +156,7 @@ public partial class ShipUpdater(MwClient bot, ApiManager apiManager)
 
         #region Diffing logic
         if (!WikiParser.CheckIfInfoboxesChanged(sanitizedData.Item1, parsedInfobox))
-            throw new InvalidOperationException("No changes detected");
+            throw new ShipAlreadyUpdatedException("No changes detected");
 
         // The below logic is only for debugging/development instances to see what changes are being made to the infobox. It is not necessary for the bot to function, so it should not be in production.
         // I've turned it off cuz its kinda annoying.
@@ -210,3 +214,5 @@ public partial class ShipUpdater(MwClient bot, ApiManager apiManager)
     [GeneratedRegex(@"<!--\s*ketchupbot-ignore\s*-->", RegexOptions.IgnoreCase | RegexOptions.Multiline)]
     private static partial Regex IGNORE_FLAG_REGEX();
 }
+
+public class ShipAlreadyUpdatedException(string message) : Exception(message);

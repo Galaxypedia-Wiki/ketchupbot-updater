@@ -51,7 +51,7 @@ public partial class ShipUpdater(MwClient bot, ApiManager apiManager)
 #if DEBUG
                 var updateStart = Stopwatch.StartNew();
 #endif
-                Log.Information($"{GetShipIdentifier(ship)} Updating ship...");
+                Log.Information("{Identifier} Updating ship...", GetShipIdentifier(ship));
                 await UpdateShip(ship, shipDatas.GetValueOrDefault(ship));
 #if DEBUG
                 updateStart.Stop();

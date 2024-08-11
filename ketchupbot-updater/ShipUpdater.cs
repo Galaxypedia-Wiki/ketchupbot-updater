@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Text.RegularExpressions;
 using ketchupbot_updater.API;
+using Serilog;
 
 namespace ketchupbot_updater;
 
@@ -50,23 +51,27 @@ public partial class ShipUpdater(MwClient bot, ApiManager apiManager)
 #if DEBUG
                 var updateStart = Stopwatch.StartNew();
 #endif
-                Logger.Log($"{GetShipIdentifier(ship)} Updating ship...", style: LogStyle.Progress);
+                Log.Information($"{GetShipIdentifier(ship)} Updating ship...");
                 await UpdateShip(ship, shipDatas.GetValueOrDefault(ship));
 #if DEBUG
                 updateStart.Stop();
-                Logger.Log($"{GetShipIdentifier(ship)} Updated ship in {updateStart.ElapsedMilliseconds}ms", style: LogStyle.Checkmark);
+                Log.Information("{ShipIdentifier)} Updated ship in {UpdateStartElapsedMilliseconds}ms", GetShipIdentifier(ship), updateStart.ElapsedMilliseconds);
 #else
-                Logger.Log($"{GetShipIdentifier(ship)} Updated ship", style: LogStyle.Checkmark);
+                Log.Information("{ShipIdentifier} Updated ship", GetShipIdentifier(ship));
 #endif
+            }
+            catch (ShipAlreadyUpdatedException)
+            {
+                Log.Information("{Identifier} Ship is up-to-date", GetShipIdentifier(ship));
             }
             catch (Exception e)
             {
-                Logger.Log($"{GetShipIdentifier(ship)} Failed to update ship: {e.Message}", level: LogLevel.Error);
+                Log.Error(e, "{Identifier} Failed to update ship", GetShipIdentifier(ship));
             }
         });
 
         massUpdateStart.Stop();
-        Logger.Log($"Finished updating all ships in {massUpdateStart.ElapsedMilliseconds/1000}s", style: LogStyle.Checkmark);
+        Log.Information("Finished updating ships in {Elapsed}s", massUpdateStart.ElapsedMilliseconds/1000);
     }
 
     /// <summary>
@@ -87,14 +92,13 @@ public partial class ShipUpdater(MwClient bot, ApiManager apiManager)
 
             if (shipData == null)
             {
-                Console.WriteLine("Ship not found in API data: " + ship);
+                Log.Error("Ship not found in API data: {0}", ship);
                 return;
             }
 
             data = shipData;
         }
         #endregion
-
 
         #region Article Fetch Logic
 #if DEBUG
@@ -105,7 +109,7 @@ public partial class ShipUpdater(MwClient bot, ApiManager apiManager)
 
 #if DEBUG
         fetchArticleStart.Stop();
-        Logger.Log($"{GetShipIdentifier(ship)} Fetched article in {fetchArticleStart.ElapsedMilliseconds}ms", style: LogStyle.Checkmark);
+        Log.Debug("{Identifier} Fetched article in {1}ms", GetShipIdentifier(ship), fetchArticleStart.ElapsedMilliseconds);
 #endif
         #endregion
 
@@ -120,7 +124,7 @@ public partial class ShipUpdater(MwClient bot, ApiManager apiManager)
 
 #if DEBUG
         parsingInfoboxStart.Stop();
-        Logger.Log($"{GetShipIdentifier(ship)} Parsed infobox in {parsingInfoboxStart.ElapsedMilliseconds}ms", style: LogStyle.Checkmark);
+        Log.Debug("{Identifier} Parsed infobox in {1}ms", GetShipIdentifier(ship), parsingInfoboxStart.ElapsedMilliseconds);
 #endif
         #endregion
 
@@ -133,7 +137,7 @@ public partial class ShipUpdater(MwClient bot, ApiManager apiManager)
 
 #if DEBUG
         mergeDataStart.Stop();
-        Logger.Log($"{GetShipIdentifier(ship)} Merged data in {mergeDataStart.ElapsedMilliseconds}ms", style: LogStyle.Checkmark);
+        Log.Debug("{Identifier} Merged data in {1}ms", GetShipIdentifier(ship), mergeDataStart.ElapsedMilliseconds);
 #endif
         #endregion
 
@@ -146,13 +150,13 @@ public partial class ShipUpdater(MwClient bot, ApiManager apiManager)
 
 #if DEBUG
         sanitizeDataStart.Stop();
-        Logger.Log($"{GetShipIdentifier(ship)} Sanitized data in {sanitizeDataStart.ElapsedMilliseconds}ms", style: LogStyle.Checkmark);
+        Log.Debug("{Identifier} Sanitized data in {1}ms", GetShipIdentifier(ship), sanitizeDataStart.ElapsedMilliseconds);
 #endif
         #endregion
 
         #region Diffing logic
         if (!WikiParser.CheckIfInfoboxesChanged(sanitizedData.Item1, parsedInfobox))
-            throw new InvalidOperationException("No changes detected");
+            throw new ShipAlreadyUpdatedException("No changes detected");
 
         // The below logic is only for debugging/development instances to see what changes are being made to the infobox. It is not necessary for the bot to function, so it should not be in production.
         // I've turned it off cuz its kinda annoying.
@@ -175,7 +179,7 @@ public partial class ShipUpdater(MwClient bot, ApiManager apiManager)
 
 #if DEBUG
         wikitextConstructionStart.Stop();
-        Logger.Log($"{GetShipIdentifier(ship)} Constructed wikitext in {wikitextConstructionStart.ElapsedMilliseconds}ms", style: LogStyle.Checkmark);
+        Log.Debug("{Identifier} Constructed wikitext in {1}ms", GetShipIdentifier(ship), wikitextConstructionStart.ElapsedMilliseconds);
 #endif
         #endregion
 
@@ -189,7 +193,7 @@ public partial class ShipUpdater(MwClient bot, ApiManager apiManager)
 
 #if DEBUG
         articleEditStart.Stop();
-        Logger.Log($"{GetShipIdentifier(ship)} Edited page in {articleEditStart.ElapsedMilliseconds}ms", style: LogStyle.Checkmark);
+        Log.Debug("{Identifier} Edited page in {1}ms", GetShipIdentifier(ship), articleEditStart.ElapsedMilliseconds);
 #endif
         #endregion
     }
@@ -210,3 +214,5 @@ public partial class ShipUpdater(MwClient bot, ApiManager apiManager)
     [GeneratedRegex(@"<!--\s*ketchupbot-ignore\s*-->", RegexOptions.IgnoreCase | RegexOptions.Multiline)]
     private static partial Regex IGNORE_FLAG_REGEX();
 }
+
+public class ShipAlreadyUpdatedException(string message) : Exception(message);

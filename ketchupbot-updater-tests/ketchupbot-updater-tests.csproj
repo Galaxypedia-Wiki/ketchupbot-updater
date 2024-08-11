@@ -25,11 +25,6 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="ApiManager\" />
-      <Folder Include="MwClient\" />
-    </ItemGroup>
-
-    <ItemGroup>
       <ProjectReference Include="..\ketchupbot-framework\ketchupbot-framework.csproj" />
     </ItemGroup>
 

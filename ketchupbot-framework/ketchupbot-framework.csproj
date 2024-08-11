@@ -11,7 +11,7 @@
 This project is a framework/library that provides the essential tools for updating the Galaxypedia.</Description>
         <Copyright>CC BY 4.0</Copyright>
         <PackageProjectUrl>https://github.com/smallketchup82/ketchupbot-updater</PackageProjectUrl>
-        <PackageLicenseUrl>https://creativecommons.org/licenses/by/4.0/</PackageLicenseUrl>
+        <PackageLicenseUrl></PackageLicenseUrl>
         <RepositoryUrl>https://github.com/smallketchup82/ketchupbot-updater</RepositoryUrl>
         <RepositoryType>git</RepositoryType>
     </PropertyGroup>

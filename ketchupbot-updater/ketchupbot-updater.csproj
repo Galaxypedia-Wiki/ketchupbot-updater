@@ -17,7 +17,7 @@
 This project is a standalone application that builds upon ketchupbot-framework to provide an intuitive interface to ketchupbot-updater</Description>
         <Copyright>https://creativecommons.org/licenses/by/4.0/</Copyright>
         <PackageProjectUrl>https://github.com/smallketchup82/ketchupbot-updater</PackageProjectUrl>
-        <PackageLicenseUrl>https://creativecommons.org/licenses/by/4.0/</PackageLicenseUrl>
+        <PackageLicenseUrl></PackageLicenseUrl>
         <RepositoryUrl>https://github.com/smallketchup82/ketchupbot-updater</RepositoryUrl>
         <RepositoryType>git</RepositoryType>
     </PropertyGroup>

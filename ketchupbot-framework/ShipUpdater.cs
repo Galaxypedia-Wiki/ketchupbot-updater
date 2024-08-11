@@ -1,15 +1,15 @@
 using System.Diagnostics;
 using System.Text.RegularExpressions;
-using ketchupbot_updater.API;
+using ketchupbot_framework.API;
 using Serilog;
 
-namespace ketchupbot_updater;
+namespace ketchupbot_framework;
 
 /// <summary>
 /// Ship updater class to facilitate updating ship pages. You should pass this class to other classes via dependency injection.
 /// </summary>
 /// <param name="bot">The <see cref="MwClient"/> instance to use for interacting with the wiki</param>
-/// <param name="apiManager">The <see cref="ApiManager"/> instance to use for making API requests</param>
+/// <param name="apiManager">The <see cref="ketchupbot_framework.API.ApiManager"/> instance to use for making API requests</param>
 public partial class ShipUpdater(MwClient bot, ApiManager apiManager)
 {
     private static string GetShipName(string data) => GlobalConfiguration.ShipNameMap.GetValueOrDefault(data, data);

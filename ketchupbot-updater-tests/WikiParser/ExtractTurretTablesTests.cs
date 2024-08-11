@@ -9,7 +9,7 @@ public class ExtractTurretTablesTests
     {
         const string text = "{| class=\"wikitable sortable\" ... |}";
 
-        MatchCollection result = ketchupbot_updater.WikiParser.ExtractTurretTables(text);
+        MatchCollection result = ketchupbot_framework.WikiParser.ExtractTurretTables(text);
 
         Assert.NotNull(result);
         Assert.True(result.Count > 0);
@@ -20,7 +20,7 @@ public class ExtractTurretTablesTests
     {
         const string text = "No turret tables here";
 
-        Assert.Throws<InvalidOperationException>(() => ketchupbot_updater.WikiParser.ExtractTurretTables(text));
+        Assert.Throws<InvalidOperationException>(() => ketchupbot_framework.WikiParser.ExtractTurretTables(text));
     }
 
     [Fact]
@@ -28,6 +28,6 @@ public class ExtractTurretTablesTests
     {
         string text = string.Concat(Enumerable.Repeat("{| class=\"wikitable sortable\" ... |}", 7));
 
-        Assert.Throws<InvalidOperationException>(() => ketchupbot_updater.WikiParser.ExtractTurretTables(text));
+        Assert.Throws<InvalidOperationException>(() => ketchupbot_framework.WikiParser.ExtractTurretTables(text));
     }
 }

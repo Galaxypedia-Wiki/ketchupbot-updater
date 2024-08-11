@@ -1,4 +1,4 @@
-using ketchupbot_updater;
+using ketchupbot_framework;
 
 namespace ketchupbot_updater_tests.WikiParser;
 
@@ -12,7 +12,7 @@ public class SanitizeDataTests
         var data = new Dictionary<string, string> { { "title1", "Some Title" }, { "description", "Some Description" } };
         var oldData = new Dictionary<string, string>();
 
-        Tuple<Dictionary<string, string>, List<string>> result = ketchupbot_updater.WikiParser.SanitizeData(data, oldData);
+        Tuple<Dictionary<string, string>, List<string>> result = ketchupbot_framework.WikiParser.SanitizeData(data, oldData);
 
         Assert.DoesNotContain("title1", result.Item1.Keys);
     }
@@ -23,7 +23,7 @@ public class SanitizeDataTests
         var data = new Dictionary<string, string> { { "title", "Some Title" } };
         var oldData = new Dictionary<string, string>();
 
-        Tuple<Dictionary<string, string>, List<string>> result = ketchupbot_updater.WikiParser.SanitizeData(data, oldData);
+        Tuple<Dictionary<string, string>, List<string>> result = ketchupbot_framework.WikiParser.SanitizeData(data, oldData);
 
         Assert.Equal("The Some Title", result.Item1["title"]);
     }
@@ -34,7 +34,7 @@ public class SanitizeDataTests
         var data = new Dictionary<string, string> { { "description", "Line1\nLine2" } };
         var oldData = new Dictionary<string, string>();
 
-        Tuple<Dictionary<string, string>, List<string>> result = ketchupbot_updater.WikiParser.SanitizeData(data, oldData);
+        Tuple<Dictionary<string, string>, List<string>> result = ketchupbot_framework.WikiParser.SanitizeData(data, oldData);
 
         Assert.Equal("Line1 Line2", result.Item1["description"]);
     }
@@ -45,7 +45,7 @@ public class SanitizeDataTests
         var data = new Dictionary<string, string> { { "someDouble", "1.0" } };
         var oldData = new Dictionary<string, string>();
 
-        Tuple<Dictionary<string, string>, List<string>> result = ketchupbot_updater.WikiParser.SanitizeData(data, oldData);
+        Tuple<Dictionary<string, string>, List<string>> result = ketchupbot_framework.WikiParser.SanitizeData(data, oldData);
 
         Assert.Equal("1", result.Item1["someDouble"]);
     }
@@ -56,7 +56,7 @@ public class SanitizeDataTests
         var data = new Dictionary<string, string> { { "someDouble", "0.2" } };
         var oldData = new Dictionary<string, string>();
 
-        Tuple<Dictionary<string, string>, List<string>> result = ketchupbot_updater.WikiParser.SanitizeData(data, oldData);
+        Tuple<Dictionary<string, string>, List<string>> result = ketchupbot_framework.WikiParser.SanitizeData(data, oldData);
 
         Assert.Equal("0.20", result.Item1["someDouble"]);
     }
@@ -67,7 +67,7 @@ public class SanitizeDataTests
         var data = new Dictionary<string, string> { { "someNumber", "1000" } };
         var oldData = new Dictionary<string, string>();
 
-        Tuple<Dictionary<string, string>, List<string>> result = ketchupbot_updater.WikiParser.SanitizeData(data, oldData);
+        Tuple<Dictionary<string, string>, List<string>> result = ketchupbot_framework.WikiParser.SanitizeData(data, oldData);
 
         Assert.Equal("1,000", result.Item1["someNumber"]);
     }
@@ -78,7 +78,7 @@ public class SanitizeDataTests
         var data = new Dictionary<string, string> { { "someKey", "no" } };
         var oldData = new Dictionary<string, string> { { "someKey", "no" } };
 
-        Tuple<Dictionary<string, string>, List<string>> result = ketchupbot_updater.WikiParser.SanitizeData(data, oldData);
+        Tuple<Dictionary<string, string>, List<string>> result = ketchupbot_framework.WikiParser.SanitizeData(data, oldData);
 
         Assert.DoesNotContain("someKey", result.Item1.Keys);
     }
@@ -91,7 +91,7 @@ public class SanitizeDataTests
 
         GlobalConfiguration.ParametersToDeleteIfValueIsYes.Add("someKey");
 
-        Tuple<Dictionary<string, string>, List<string>> result = ketchupbot_updater.WikiParser.SanitizeData(data, oldData);
+        Tuple<Dictionary<string, string>, List<string>> result = ketchupbot_framework.WikiParser.SanitizeData(data, oldData);
 
         GlobalConfiguration.ParametersToDeleteIfValueIsYes.Remove("someKey");
 

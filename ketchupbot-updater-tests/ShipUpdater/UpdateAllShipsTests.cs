@@ -1,5 +1,3 @@
-using ketchupbot_updater.API;
-using Moq;
 
 namespace ketchupbot_updater_tests.ShipUpdater;
 

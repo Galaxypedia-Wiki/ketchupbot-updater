@@ -1,8 +1,8 @@
 using System.Reflection;
-using ketchupbot_updater.Types;
+using ketchupbot_framework.Types;
 using Newtonsoft.Json;
 
-namespace ketchupbot_updater.API;
+namespace ketchupbot_framework.API;
 
 /// <summary>
 /// API Manager for interacting with the Galaxy Info API. Responsible for fetching, processing, and returning properly formatted data from the Galaxy Info API.

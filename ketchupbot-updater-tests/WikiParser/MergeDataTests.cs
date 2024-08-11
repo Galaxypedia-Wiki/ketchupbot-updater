@@ -61,7 +61,7 @@ public class MergeDataTests
             ["description"] = "Merge test"
         };
 
-        Tuple<Dictionary<string, string>, List<string>> mergedData = ketchupbot_updater.WikiParser.MergeData(newData, SampleDeityPage);
+        Tuple<Dictionary<string, string>, List<string>> mergedData = ketchupbot_framework.WikiParser.MergeData(newData, SampleDeityPage);
 
         foreach (KeyValuePair<string, string> kvp in mergedData.Item1) Assert.Equal(kvp.Key == "description" ? "Merge test" : SampleDeityPage[kvp.Key], kvp.Value);
     }
@@ -69,7 +69,7 @@ public class MergeDataTests
     [Fact]
     public void MergeData_ChangesNothing()
     {
-        Tuple<Dictionary<string, string>, List<string>> mergedData = ketchupbot_updater.WikiParser.MergeData(SampleApiResponse, SampleDeityPage);
+        Tuple<Dictionary<string, string>, List<string>> mergedData = ketchupbot_framework.WikiParser.MergeData(SampleApiResponse, SampleDeityPage);
 
         Assert.Equal(SampleDeityPage, mergedData.Item1);
     }
@@ -82,7 +82,7 @@ public class MergeDataTests
             ["new_key"] = "new_value"
         };
 
-        Tuple<Dictionary<string, string>, List<string>> mergedData = ketchupbot_updater.WikiParser.MergeData(newData, SampleDeityPage);
+        Tuple<Dictionary<string, string>, List<string>> mergedData = ketchupbot_framework.WikiParser.MergeData(newData, SampleDeityPage);
 
         foreach (KeyValuePair<string, string> kvp in mergedData.Item1) Assert.Equal(kvp.Key == "new_key" ? "new_value" : SampleDeityPage[kvp.Key], kvp.Value);
     }
@@ -93,7 +93,7 @@ public class MergeDataTests
         Dictionary<string, string> newData = new(SampleApiResponse);
         newData.Remove("description");
 
-        Tuple<Dictionary<string, string>, List<string>> mergedData = ketchupbot_updater.WikiParser.MergeData(newData, SampleDeityPage);
+        Tuple<Dictionary<string, string>, List<string>> mergedData = ketchupbot_framework.WikiParser.MergeData(newData, SampleDeityPage);
 
         foreach (KeyValuePair<string, string> kvp in mergedData.Item1) Assert.Equal(SampleDeityPage[kvp.Key], kvp.Value);
     }

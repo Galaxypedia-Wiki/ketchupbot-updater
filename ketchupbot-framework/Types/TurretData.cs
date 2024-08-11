@@ -1,7 +1,7 @@
 using System.Text.Json.Serialization;
 using Newtonsoft.Json;
 
-namespace ketchupbot_updater.Types;
+namespace ketchupbot_framework.Types;
 
 [Newtonsoft.Json.JsonConverter(typeof(JsonStringEnumConverter))]
 public enum TurretTypeEnum

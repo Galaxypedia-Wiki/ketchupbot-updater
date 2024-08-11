@@ -12,6 +12,14 @@
         <AssemblyVersion>4.0.0.0</AssemblyVersion>
         <FileVersion>4.0.0.0</FileVersion>
         <Version>4.0.0</Version>
+        <Description>KetchupBot-Updater: The Premier Galaxypedia Updater
+
+This project is a standalone application that builds upon ketchupbot-framework to provide an intuitive interface to ketchupbot-updater</Description>
+        <Copyright>https://creativecommons.org/licenses/by/4.0/</Copyright>
+        <PackageProjectUrl>https://github.com/smallketchup82/ketchupbot-updater</PackageProjectUrl>
+        <PackageLicenseUrl>https://creativecommons.org/licenses/by/4.0/</PackageLicenseUrl>
+        <RepositoryUrl>https://github.com/smallketchup82/ketchupbot-updater</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
     </PropertyGroup>
 
     <ItemGroup>
@@ -42,6 +50,10 @@
       <Content Include="..\.dockerignore">
         <Link>.dockerignore</Link>
       </Content>
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\ketchupbot-framework\ketchupbot-framework.csproj" />
     </ItemGroup>
 
 </Project>

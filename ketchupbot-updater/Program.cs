@@ -1,6 +1,7 @@
 ﻿using System.CommandLine;
 using System.Reflection;
-using ketchupbot_updater.API;
+using ketchupbot_framework;
+using ketchupbot_framework.API;
 using ketchupbot_updater.Jobs;
 using Microsoft.Extensions.Configuration;
 using Quartz;

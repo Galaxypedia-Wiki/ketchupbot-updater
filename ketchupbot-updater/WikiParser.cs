@@ -154,6 +154,7 @@ public static partial class WikiParser
         foreach (string parameter in GlobalConfiguration.ParameterExclusions)
             newDataJObject.Remove(parameter);
 
+        // I wonder, should we refactor this function to return null if both inputs are the same? Or should we leave it as is, having the caller manually run CheckIfInfoboxesChanged?
         oldDataJObject.Merge(newDataJObject, new JsonMergeSettings
         {
             MergeArrayHandling = MergeArrayHandling.Replace,

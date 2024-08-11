@@ -11,7 +11,7 @@ public class ObjectToWikitextTests
             { "type", "Destroyer" }
         };
 
-        string result = ketchupbot_updater.WikiParser.ObjectToWikitext(data);
+        string result = ketchupbot_framework.WikiParser.ObjectToWikitext(data);
 
         Assert.Equal("{{Ship Infobox\n|name = Test Ship\n|type = Destroyer\n}}", result);
     }
@@ -21,7 +21,7 @@ public class ObjectToWikitextTests
     {
         var data = new Dictionary<string, string>();
 
-        string result = ketchupbot_updater.WikiParser.ObjectToWikitext(data);
+        string result = ketchupbot_framework.WikiParser.ObjectToWikitext(data);
 
         Assert.Equal("{{Ship Infobox\n}}", result);
     }
@@ -35,7 +35,7 @@ public class ObjectToWikitextTests
             { "type", "Destroyer" }
         };
 
-        string result = ketchupbot_updater.WikiParser.ObjectToWikitext(data);
+        string result = ketchupbot_framework.WikiParser.ObjectToWikitext(data);
 
         Assert.Equal("{{Ship Infobox\n|name = Test $$hip\n|type = Destroyer\n}}", result);
     }

@@ -1,3 +1,4 @@
+using ketchupbot_framework;
 using Quartz;
 
 namespace ketchupbot_updater.Jobs;

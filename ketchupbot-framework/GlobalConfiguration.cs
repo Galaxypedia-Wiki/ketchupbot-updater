@@ -1,4 +1,4 @@
-namespace ketchupbot_updater;
+namespace ketchupbot_framework;
 
 public static class GlobalConfiguration
 {

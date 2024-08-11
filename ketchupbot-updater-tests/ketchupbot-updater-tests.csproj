@@ -25,12 +25,12 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\ketchupbot-updater\ketchupbot-updater.csproj" />
+      <Folder Include="ApiManager\" />
+      <Folder Include="MwClient\" />
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="ApiManager\" />
-      <Folder Include="MwClient\" />
+      <ProjectReference Include="..\ketchupbot-framework\ketchupbot-framework.csproj" />
     </ItemGroup>
 
 </Project>

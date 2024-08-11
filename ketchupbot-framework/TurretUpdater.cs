@@ -1,8 +1,8 @@
 using System.Text.RegularExpressions;
-using ketchupbot_updater.API;
-using ketchupbot_updater.Types;
+using ketchupbot_framework.API;
+using ketchupbot_framework.Types;
 
-namespace ketchupbot_updater;
+namespace ketchupbot_framework;
 
 public class TurretUpdater(MwClient mwClient, ApiManager apiManager)
 {

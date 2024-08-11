@@ -1,16 +1,16 @@
 using System.Diagnostics;
 using System.Text.RegularExpressions;
-using ketchupbot_updater.API;
+using ketchupbot_framework.API;
 using Serilog;
 
-namespace ketchupbot_updater;
+namespace ketchupbot_framework;
 
 /// <summary>
 /// Ship updater class to facilitate updating ship pages. You should pass this class to other classes via dependency injection.
 /// </summary>
 /// <param name="bot">The <see cref="MwClient"/> instance to use for interacting with the wiki</param>
-/// <param name="apiManager">The <see cref="ApiManager"/> instance to use for making API requests</param>
-public partial class ShipUpdater(MwClient bot, ApiManager apiManager)
+/// <param name="apiManager">The <see cref="ketchupbot_framework.API.ApiManager"/> instance to use for making API requests</param>
+public partial class ShipUpdater(MwClient bot, ApiManager apiManager, bool dryRun = false)
 {
     private static string GetShipName(string data) => GlobalConfiguration.ShipNameMap.GetValueOrDefault(data, data);
 
@@ -189,7 +189,7 @@ public partial class ShipUpdater(MwClient bot, ApiManager apiManager)
 #endif
 
         // TODO: Make the edit summary more descriptive. Add in added, changed, and removed parameters.
-        await bot.EditArticle(ship, newWikitext, "Automated ship data update");
+        await bot.EditArticle(ship, newWikitext, "Automated ship data update", dryRun);
 
 #if DEBUG
         articleEditStart.Stop();

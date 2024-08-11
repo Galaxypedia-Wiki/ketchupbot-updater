@@ -12,15 +12,20 @@
         <AssemblyVersion>4.0.0.0</AssemblyVersion>
         <FileVersion>4.0.0.0</FileVersion>
         <Version>4.0.0</Version>
+        <Description>KetchupBot-Updater: The Premier Galaxypedia Updater
+
+This project is a standalone application that builds upon ketchupbot-framework to provide an intuitive interface to ketchupbot-updater</Description>
+        <Copyright>https://creativecommons.org/licenses/by/4.0/</Copyright>
+        <PackageProjectUrl>https://github.com/smallketchup82/ketchupbot-updater</PackageProjectUrl>
+        <PackageLicenseUrl></PackageLicenseUrl>
+        <RepositoryUrl>https://github.com/smallketchup82/ketchupbot-updater</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="Colorful.Console" Version="1.2.15" />
-      <PackageReference Include="JsonDiffPatch.Net" Version="2.3.0" />
       <PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
       <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="8.0.0" />
       <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.0" />
-      <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
       <PackageReference Include="Quartz" Version="3.12.0" />
       <PackageReference Include="Serilog" Version="4.0.1" />
       <PackageReference Include="Serilog.Enrichers.Thread" Version="4.0.0" />
@@ -42,6 +47,10 @@
       <Content Include="..\.dockerignore">
         <Link>.dockerignore</Link>
       </Content>
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\ketchupbot-framework\ketchupbot-framework.csproj" />
     </ItemGroup>
 
 </Project>

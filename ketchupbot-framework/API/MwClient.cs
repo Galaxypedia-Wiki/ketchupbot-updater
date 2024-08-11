@@ -5,7 +5,7 @@ using System.Text;
 using System.Web;
 using Newtonsoft.Json;
 
-namespace ketchupbot_updater.API;
+namespace ketchupbot_framework.API;
 
 public class MwClient
 {
@@ -122,10 +122,10 @@ public class MwClient
         return revision?.slots?.main?.content;
     }
 
-    public async Task EditArticle(string title, string newContent, string summary)
+    public async Task EditArticle(string title, string newContent, string summary, bool? dryRun = false)
     {
         // If dry run is enabled, don't actually make the edit. Mock success instead.
-        if (Program.DryRun) return;
+        if (dryRun == true) return;
 
         if (await IsLoggedIn() == false)
             throw new InvalidOperationException("Not logged in");

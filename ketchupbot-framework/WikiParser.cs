@@ -2,7 +2,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json.Linq;
 
-namespace ketchupbot_updater;
+namespace ketchupbot_framework;
 
 /// <summary>
 /// Class that contains methods for parsing and manipulating wikitext & ship infobox json's

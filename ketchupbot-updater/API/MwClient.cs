@@ -25,14 +25,14 @@ public class MwClient
     /// <param name="password">Password to use for logging in</param>
     /// <param name="baseUrl"></param>
     /// <exception cref="InvalidOperationException"></exception>
-    public MwClient(string username, string password, string baseUrl = "https://robloxgalaxy.wiki/api.php")
+    public MwClient(string? username = null, string? password = null, string baseUrl = "https://robloxgalaxy.wiki/api.php")
     {
         _baseUrl = baseUrl;
 
         Client.DefaultRequestHeaders.Add("User-Agent", $"KetchupBot-Updater/{Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "1.0"}");
 
-        // TODO: Change this to not run in the constructor. Some methods can be run without being logged in, such as GetArticle.
-        LogIn(username, password).GetAwaiter().GetResult();
+        if (username != null && password != null)
+            LogIn(username, password).GetAwaiter().GetResult();
     }
 
     /// <summary>
@@ -75,13 +75,20 @@ public class MwClient
     }
 
     /// <summary>
-    ///
+    /// Check whether the MwClient is currently logged in or not
     /// </summary>
-    /// <exception cref="NotImplementedException"></exception>
-    public void IsLoggedIn()
+    /// <returns></returns>
+    public async Task<bool> IsLoggedIn()
     {
-        // This should probably make a call to query userinfo
-        throw new NotImplementedException();
+        using HttpResponseMessage response = await Client.GetAsync($"{_baseUrl}?action=query&format=json&assert=user");
+
+        response.EnsureSuccessStatusCode();
+
+        string jsonResponse = await response.Content.ReadAsStringAsync();
+
+        dynamic? data = JsonConvert.DeserializeObject<dynamic>(jsonResponse);
+
+        return data?.error == null;
     }
 
     public async Task<string> GetArticle(string title)
@@ -119,6 +126,9 @@ public class MwClient
     {
         // If dry run is enabled, don't actually make the edit. Mock success instead.
         if (Program.DryRun) return;
+
+        if (await IsLoggedIn() == false)
+            throw new InvalidOperationException("Not logged in");
 
         // Get MD5 hash of the new content to use for validation
         string newContentHash = BitConverter.ToString(MD5.HashData(Encoding.UTF8.GetBytes(newContent))).Replace("-", "").ToLower();

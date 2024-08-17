@@ -16,7 +16,7 @@ namespace ketchupbot_updater;
 /// <summary>
 /// Entrypoint, configuration, and initialization for the updater component
 /// </summary>
-public static class Program
+public class Program
 {
     public static bool DryRun { get; private set; }
 
@@ -109,6 +109,7 @@ public static class Program
 
             IConfigurationBuilder builder = new ConfigurationBuilder()
                 .SetBasePath(handler.ParseResult.GetValueForOption(secretsDirectoryOption) ?? AppContext.BaseDirectory)
+                .AddUserSecrets<Program>()
                 .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
                 .AddEnvironmentVariables();
 

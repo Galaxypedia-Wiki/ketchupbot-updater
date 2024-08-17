@@ -20,12 +20,14 @@ This project is a standalone application that builds upon ketchupbot-framework t
         <PackageLicenseUrl></PackageLicenseUrl>
         <RepositoryUrl>https://github.com/smallketchup82/ketchupbot-updater</RepositoryUrl>
         <RepositoryType>git</RepositoryType>
+        <UserSecretsId>58dcf627-f360-418d-b50b-6e77cdf952b6</UserSecretsId>
     </PropertyGroup>
 
     <ItemGroup>
       <PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
       <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="8.0.0" />
       <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.0" />
+      <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="8.0.0" />
       <PackageReference Include="Quartz" Version="3.12.0" />
       <PackageReference Include="Serilog" Version="4.0.1" />
       <PackageReference Include="Serilog.Enrichers.Thread" Version="4.0.0" />
@@ -34,9 +36,6 @@ This project is a standalone application that builds upon ketchupbot-framework t
     </ItemGroup>
 
     <ItemGroup>
-      <None Update="appsettings.json">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      </None>
       <None Update="appsettings.example.json">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </None>

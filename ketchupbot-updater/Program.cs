@@ -135,6 +135,7 @@ public static class Program
                 configuration["MWPASSWORD"] ?? throw new InvalidOperationException("MWPASSWORD not set"));
             Log.Information("Logged into the Galaxypedia");
             var apiManager = new ApiManager(configuration["GIAPI_URL"] ?? throw new InvalidOperationException("GIAPI_URL not set"));
+            var shipUpdater = new ShipUpdater(mwClient, apiManager);
 
             #region Scheduling Logic
 
@@ -159,7 +160,8 @@ public static class Program
                         .WithIdentity("massUpdateJob", "group1")
                         .Build();
 
-                    massUpdateJob.JobDataMap.Put("shipUpdater", new ShipUpdater(mwClient, apiManager));
+                    massUpdateJob.JobDataMap.Put("shipUpdater", shipUpdater);
+                    massUpdateJob.JobDataMap.Put("healthCheckUrl", configuration["HEALTHCHECK_URL"]);
 
                     ITrigger massUpdateTrigger = TriggerBuilder.Create()
                         .WithIdentity("massUpdateTrigger", "group1")
@@ -204,8 +206,6 @@ public static class Program
             string[]? shipsOptionValue = handler.ParseResult.GetValueForOption(shipsOption);
             if (shipsOptionValue != null && shipsOptionValue.First() != "none" && shipScheduleOptionValue == null)
             {
-                var shipUpdater = new ShipUpdater(mwClient, apiManager);
-
                 if (shipsOptionValue.First() == "all")
                     await shipUpdater.UpdateAllShips();
                 else

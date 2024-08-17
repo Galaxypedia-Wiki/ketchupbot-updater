@@ -1,4 +1,5 @@
 using ketchupbot_framework;
+using ketchupbot_framework.API;
 using Quartz;
 
 namespace ketchupbot_updater.Jobs;
@@ -10,12 +11,15 @@ public class MassUpdateJob : IJob
         JobDataMap jobDataMap = context.MergedJobDataMap;
 
         var shipUpdater = (ShipUpdater)jobDataMap["shipUpdater"];
+        string? healthChecksUrl = jobDataMap.GetString("healthChecksUrl");
         if (shipUpdater == null) throw new InvalidOperationException("ShipUpdater not found in job data map");
 
         // I was thinking that maybe we should wrap this in a try/catch block. And we probably should, because I don't
         // think we'd be able to catch any errors further up in the call stack. Not sure though, so I'll leave it for
         // now until I make a decision.
         await shipUpdater.UpdateAllShips();
+
+        if (healthChecksUrl != null) await HealthChecks.Ping(healthChecksUrl);
 
         Console.WriteLine("Mass update job completed");
         if (context.NextFireTimeUtc != null)

@@ -4,6 +4,8 @@ using ketchupbot_framework;
 using ketchupbot_framework.API;
 using ketchupbot_updater.Jobs;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Quartz;
 using Quartz.Impl;
 using Serilog;
@@ -105,15 +107,13 @@ public class Program
             Console.WriteLine(
                 $"\nketchupbot-updater | v{Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "Development"} | {DateTime.Now}\n");
 
+            HostApplicationBuilder applicationBuilder = Host.CreateApplicationBuilder(args);
+            applicationBuilder.Services.AddQuartz();
+            applicationBuilder.Services.AddQuartzHostedService();
+            applicationBuilder.Services.AddSerilog();
+            applicationBuilder.Configuration.AddUserSecrets<Program>();
+
             #region Configuration
-
-            IConfigurationBuilder builder = new ConfigurationBuilder()
-                .SetBasePath(handler.ParseResult.GetValueForOption(secretsDirectoryOption) ?? AppContext.BaseDirectory)
-                .AddUserSecrets<Program>()
-                .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
-                .AddEnvironmentVariables();
-
-            IConfigurationRoot configuration = builder.Build();
 
 #if DEBUG
             Log.Information("Running in development mode");
@@ -132,11 +132,25 @@ public class Program
 
             #endregion
 
-            var mwClient = new MwClient(configuration["MWUSERNAME"] ?? throw new InvalidOperationException("MWUSERNAME not set"),
-                configuration["MWPASSWORD"] ?? throw new InvalidOperationException("MWPASSWORD not set"));
+            applicationBuilder.Services.AddSingleton<MwClient>(provider =>
+            {
+                provider.GetRequiredService<IConfiguration>();
+
+                return new MwClient(provider.GetRequiredService<IConfiguration>()["MWUSERNAME"] ?? throw new InvalidOperationException("MWUSERNAME not set"),
+                    provider.GetRequiredService<IConfiguration>()["MWPASSWORD"] ?? throw new InvalidOperationException("MWPASSWORD not set"));
+            });
             Log.Information("Logged into the Galaxypedia");
-            var apiManager = new ApiManager(configuration["GIAPI_URL"] ?? throw new InvalidOperationException("GIAPI_URL not set"));
-            var shipUpdater = new ShipUpdater(mwClient, apiManager);
+
+            applicationBuilder.Services.AddSingleton<ApiManager>(provider =>
+            {
+                provider.GetRequiredService<IConfiguration>();
+
+                return new ApiManager(provider.GetRequiredService<IConfiguration>()["GIAPI_URL"] ?? throw new InvalidOperationException("GIAPI_URL not set"));
+            });
+
+            applicationBuilder.Services.AddSingleton<ShipUpdater>();
+
+            IHost app = applicationBuilder.Build();
 
             #region Scheduling Logic
 
@@ -161,8 +175,8 @@ public class Program
                         .WithIdentity("massUpdateJob", "group1")
                         .Build();
 
-                    massUpdateJob.JobDataMap.Put("shipUpdater", shipUpdater);
-                    massUpdateJob.JobDataMap.Put("healthCheckUrl", configuration["HEALTHCHECK_URL"]);
+                    massUpdateJob.JobDataMap.Put("shipUpdater", app.Services.GetRequiredService<ShipUpdater>());
+                    massUpdateJob.JobDataMap.Put("healthCheckUrl", applicationBuilder.Configuration["HEALTHCHECK_URL"]);
 
                     ITrigger massUpdateTrigger = TriggerBuilder.Create()
                         .WithIdentity("massUpdateTrigger", "group1")
@@ -183,7 +197,7 @@ public class Program
                         .WithIdentity("turretUpdateJob", "group1")
                         .Build();
 
-                    turretUpdateJob.JobDataMap.Put("turretUpdater", new TurretUpdater(mwClient, apiManager));
+                    turretUpdateJob.JobDataMap.Put("turretUpdater", new TurretUpdater(app.Services.GetRequiredService<MwClient>(), app.Services.GetRequiredService<ApiManager>()));
 
                     ITrigger turretUpdateTrigger = TriggerBuilder.Create()
                         .WithIdentity("turretUpdateTrigger", "group1")
@@ -196,8 +210,7 @@ public class Program
                     Console.WriteLine("Scheduled turret update job");
                 }
 
-                // Keep application running until it's manually stopped. The scheduler will never stop by itself.
-                await Task.Delay(-1);
+                await app.RunAsync();
             }
 
             #endregion
@@ -208,10 +221,10 @@ public class Program
             if (shipsOptionValue != null && shipsOptionValue.First() != "none" && shipScheduleOptionValue == null)
             {
                 if (shipsOptionValue.First() == "all")
-                    await shipUpdater.UpdateAllShips();
+                    await app.Services.GetRequiredService<ShipUpdater>().UpdateAllShips();
                 else
                 {
-                    await shipUpdater.MassUpdateShips(shipsOptionValue.ToList());
+                    await app.Services.GetRequiredService<ShipUpdater>().MassUpdateShips(shipsOptionValue.ToList());
                 }
             }
 
@@ -220,11 +233,11 @@ public class Program
             #region Turret Option Handler
 
             bool turrets = handler.ParseResult.GetValueForOption(turretsOption);
-            if (turrets) await new TurretUpdater(mwClient, apiManager).UpdateTurrets();
+            if (turrets)
+                await new TurretUpdater(app.Services.GetRequiredService<MwClient>(),
+                    app.Services.GetRequiredService<ApiManager>()).UpdateTurrets();
 
             #endregion
-
-            await Log.CloseAndFlushAsync();
         });
 
         return await rootCommand.InvokeAsync(args);

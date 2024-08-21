@@ -17,7 +17,7 @@ public class ApiManager(string galaxyInfoApi)
     /// </summary>
     private Dictionary<string, Dictionary<string, string>>? _cachedShipData;
 
-    private static readonly HttpClient HttpClient = new();
+    protected static readonly HttpClient HttpClient = new();
 
     static ApiManager()
     {

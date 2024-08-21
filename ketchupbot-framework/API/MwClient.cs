@@ -9,7 +9,7 @@ namespace ketchupbot_framework.API;
 
 public class MwClient
 {
-    private static readonly HttpClient Client = new(new HttpClientHandler
+    protected static readonly HttpClient Client = new(new HttpClientHandler
     {
         // Enable cookies for login session
         UseCookies = true,

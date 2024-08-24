@@ -11,7 +11,7 @@ public class MassUpdateJob : IJob
         JobDataMap jobDataMap = context.MergedJobDataMap;
 
         var shipUpdater = (ShipUpdater)jobDataMap["shipUpdater"];
-        string? healthChecksUrl = jobDataMap.GetString("healthChecksUrl");
+        string? healthChecksUrl = jobDataMap.TryGetString("healthChecksUrl", out string? healthChecksUrlRaw) ? healthChecksUrlRaw : null;
         if (shipUpdater == null) throw new InvalidOperationException("ShipUpdater not found in job data map");
 
         // I was thinking that maybe we should wrap this in a try/catch block. And we probably should, because I don't

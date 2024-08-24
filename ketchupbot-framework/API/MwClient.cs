@@ -25,7 +25,7 @@ public class MwClient
     /// <param name="password">Password to use for logging in</param>
     /// <param name="baseUrl"></param>
     /// <exception cref="InvalidOperationException"></exception>
-    public MwClient(string? username = null, string? password = null, string baseUrl = "https://robloxgalaxy.wiki/api.php")
+    public MwClient(string? username = null, string? password = null, string baseUrl = "https://galaxypedia.org/api.php")
     {
         _baseUrl = baseUrl;
 

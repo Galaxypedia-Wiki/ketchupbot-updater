@@ -132,6 +132,18 @@ public class Program
 
             #endregion
 
+            SentrySdk.Init(options =>
+            {
+                options.Dsn = configuration["SENTRY_DSN"];
+                options.AutoSessionTracking = true;
+                options.TracesSampleRate = 1.0;
+                options.ProfilesSampleRate = 1.0;
+
+#if DEBUG
+                options.Debug = true;
+#endif
+            });
+
             var mwClient = new MwClient(configuration["MWUSERNAME"] ?? throw new InvalidOperationException("MWUSERNAME not set"),
                 configuration["MWPASSWORD"] ?? throw new InvalidOperationException("MWPASSWORD not set"));
             Log.Information("Logged into the Galaxypedia");
@@ -162,7 +174,7 @@ public class Program
                         .Build();
 
                     massUpdateJob.JobDataMap.Put("shipUpdater", shipUpdater);
-                    massUpdateJob.JobDataMap.Put("healthCheckUrl", configuration["HEALTHCHECK_URL"]);
+                    massUpdateJob.JobDataMap.Put("healthChecksUrl", configuration["HEALTHCHECK_URL"]);
 
                     ITrigger massUpdateTrigger = TriggerBuilder.Create()
                         .WithIdentity("massUpdateTrigger", "group1")
@@ -173,7 +185,7 @@ public class Program
 
                     await scheduler.ScheduleJob(massUpdateJob, massUpdateTrigger);
                     Console.WriteLine($"Scheduled ship mass update job for {massUpdateTrigger.GetNextFireTimeUtc()?.ToLocalTime()}");
-                    Console.WriteLine("Running mass update job now...");
+                    Console.WriteLine("Running a mass update job now...");
                     await scheduler.TriggerJob(new JobKey("massUpdateJob", "group1"));
                 }
 

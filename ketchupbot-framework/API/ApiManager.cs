@@ -29,7 +29,7 @@ public class ApiManager(string galaxyInfoApi)
     /// </summary>
     /// <param name="returnCachedOnError">Whether to return an internally cached version (from the last successful run, if any), if the request fails. If false, or if there is no cached version available, an <see cref="HttpRequestException"/> will be raised on error.</param>
     /// <returns>A list of ships from the Galaxy Info API with their respective data attributes</returns>
-    public async Task<Dictionary<string, Dictionary<string, string>>?> GetShipsData(bool returnCachedOnError = true)
+    public async Task<Dictionary<string, Dictionary<string, string>>> GetShipsData(bool returnCachedOnError = true)
     {
         using HttpResponseMessage response = await HttpClient.GetAsync($"{galaxyInfoApi.Trim()}/api/v2/galaxypedia");
 
@@ -56,7 +56,7 @@ public class ApiManager(string galaxyInfoApi)
                 // }
                 var deserializedResponse = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, string>>>(jsonResponse);
 
-                _cachedShipData = deserializedResponse;
+                _cachedShipData = deserializedResponse ?? throw new HttpRequestException("Failed to deserialize ship data from the Galaxy Info API");
 
                 return deserializedResponse;
             }

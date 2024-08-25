@@ -24,9 +24,7 @@ public partial class ShipUpdater(MwClient bot, ApiManager apiManager, bool dryRu
     public async Task UpdateAllShips(Dictionary<string, Dictionary<string, string>>? shipDatas = null,
         int threads = -1)
     {
-        Dictionary<string, Dictionary<string, string>>? allShips = await apiManager.GetShipsData();
-        ArgumentNullException.ThrowIfNull(allShips);
-
+        Dictionary<string, Dictionary<string, string>> allShips = await apiManager.GetShipsData();
         await MassUpdateShips(allShips.Keys.ToList(), shipDatas, threads);
     }
 

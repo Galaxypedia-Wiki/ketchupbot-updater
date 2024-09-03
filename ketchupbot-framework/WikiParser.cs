@@ -166,8 +166,18 @@ public static partial class WikiParser
         foreach (KeyValuePair<string, string> kvp in newData)
         {
             // If the key is in the parameter exclusions list, skip it. If the key is not in the old data, or the value is different, add it to the updated parameters list
+            // If the key is "title", ignore it
+            // If the value is "no" and the key is in the list of parameters to not delete if the value is no, skip it
+            // If the value is "yes" and the key is in the list of parameters to delete if the value is yes, skip it
+            // TODO: Remove the code duplication here
             if (!GlobalConfiguration.ParameterExclusions.Contains(kvp.Key) &&
-                (!oldData.TryGetValue(kvp.Key, out string? oldValue) || oldValue != kvp.Value)) updatedParameters.Add(kvp.Key);
+                (!oldData.TryGetValue(kvp.Key, out string? oldValue) || oldValue != kvp.Value) &&
+                kvp.Key != "title" &&
+                !((kvp.Value.Equals("no", StringComparison.OrdinalIgnoreCase) &&
+                  !GlobalConfiguration.ParametersToNotDeleteIfValueIsNo.Contains(kvp.Key)) ||
+                 (kvp.Value.Equals("yes", StringComparison.OrdinalIgnoreCase) &&
+                  GlobalConfiguration.ParametersToDeleteIfValueIsYes.Contains(kvp.Key))))
+                updatedParameters.Add(kvp.Key);
         }
 
         var mergedData = oldDataJObject.ToObject<Dictionary<string, string>>();
@@ -195,7 +205,7 @@ public static partial class WikiParser
     /// </remarks>
     /// <param name="data">The data to sanitize</param>
     /// <param name="oldData">The old data pre-merge. Used for tracking removed parameters</param>
-    /// <returns></returns>
+    /// <returns>A tuple. The first item being the sanitized data. The second being parameters that were removed in sanitization</returns>
     public static Tuple<Dictionary<string, string>, List<string>> SanitizeData(Dictionary<string, string> data,
         Dictionary<string, string> oldData)
     {

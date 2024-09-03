@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text;
 using System.Text.RegularExpressions;
 using ketchupbot_framework.API;
 using Serilog;
@@ -186,8 +187,20 @@ public partial class ShipUpdater(MwClient bot, ApiManager apiManager, bool dryRu
         var articleEditStart = Stopwatch.StartNew();
 #endif
 
-        // TODO: Make the edit summary more descriptive. Add in added, changed, and removed parameters.
-        await bot.EditArticle(ship, newWikitext, "Automated ship data update", dryRun);
+        var editSummary = new StringBuilder();
+        editSummary.AppendLine("Automated ship data update.");
+
+        if (mergedData.Item2.Count > 0)
+        {
+            editSummary.AppendLine("Updated parameters: " + string.Join(", ", mergedData.Item2));
+        }
+
+        if (sanitizedData.Item2.Count > 0)
+        {
+            editSummary.AppendLine("Removed parameters: " + string.Join(", ", sanitizedData.Item2));
+        }
+
+        await bot.EditArticle(ship, newWikitext, editSummary.ToString(), dryRun);
 
 #if DEBUG
         articleEditStart.Stop();

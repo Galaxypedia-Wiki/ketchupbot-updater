@@ -146,6 +146,23 @@ public static partial class WikiParser
         foreach (string parameter in GlobalConfiguration.ParameterExclusions)
             newDataJObject.Remove(parameter);
 
+        // Handle spinals being named differently in the API vs the wiki
+        if (newDataJObject.TryGetValue("spinal_1", out JToken? spinal1))
+        {
+            newDataJObject["(f)_spinal"] = spinal1;
+        }
+
+        if (newDataJObject.TryGetValue("spinal_2", out JToken? spinal2))
+        {
+            newDataJObject["(g)_spinal"] = spinal2;
+        }
+
+        // Remove all spinal keys from the new data
+        foreach (JProperty idk in newDataJObject.Properties().ToList().Where(idk => idk.Name.StartsWith("spinal_") && idk.Name != "spinal_dps"))
+        {
+            newDataJObject.Remove(idk.Name);
+        }
+
         // I wonder, should we refactor this function to return null if both inputs are the same? Or should we leave it as is, having the caller manually run CheckIfInfoboxesChanged?
         oldDataJObject.Merge(newDataJObject, new JsonMergeSettings
         {

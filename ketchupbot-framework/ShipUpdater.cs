@@ -2,7 +2,6 @@ using System.Diagnostics;
 using System.Text;
 using System.Text.RegularExpressions;
 using ketchupbot_framework.API;
-using Newtonsoft.Json;
 using Serilog;
 
 namespace ketchupbot_framework;

@@ -9,9 +9,9 @@
         <Title>ketchupbot-updater</Title>
         <Authors>smallketchup82</Authors>
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
-        <AssemblyVersion>4.1.0.0</AssemblyVersion>
-        <FileVersion>4.1.0.0</FileVersion>
-        <Version>4.1.0</Version>
+        <AssemblyVersion>5.0.1.0</AssemblyVersion>
+        <FileVersion>5.0.1.0</FileVersion>
+        <Version>5.0.1</Version>
         <Description>KetchupBot-Updater: The Premier Galaxypedia Updater
 
 This project is a standalone application that builds upon ketchupbot-framework to provide an intuitive interface to ketchupbot-updater</Description>

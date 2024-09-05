@@ -5,7 +5,7 @@
         <RootNamespace>ketchupbot_framework</RootNamespace>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <Version>4.1.0</Version>
+        <Version>5.0.1</Version>
         <Description>KetchupBot-Updater: The premier Galaxypedia Updater
 
 This project is a framework/library that provides the essential tools for updating the Galaxypedia.</Description>

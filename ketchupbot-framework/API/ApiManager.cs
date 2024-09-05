@@ -1,70 +1,75 @@
 using System.Reflection;
 using ketchupbot_framework.Types;
+using Microsoft.Extensions.Caching.Memory;
 using Newtonsoft.Json;
 
 namespace ketchupbot_framework.API;
 
 /// <summary>
-/// API Manager for interacting with the Galaxy Info API. Responsible for fetching, processing, and returning properly formatted data from the Galaxy Info API.
+///     API Manager for interacting with the Galaxy Info API. Responsible for fetching, processing, and returning properly
+///     formatted data from the Galaxy Info API.
 /// </summary>
 /// <param name="galaxyInfoApi"></param>
-public class ApiManager(string galaxyInfoApi)
+public class ApiManager(string galaxyInfoApi, IMemoryCache cache)
 {
-    /// <summary>
-    /// Cached ship data from the last successful run.
-    /// TODO: This probably isn't enough. We should probably add persistence to this. Might also be wise to have
-    /// GetShipsData always return the cached value, and only update the cached value once per hour.
-    /// </summary>
-    private Dictionary<string, Dictionary<string, string>>? _cachedShipData;
-
     protected static readonly HttpClient HttpClient = new();
 
     static ApiManager()
     {
-        HttpClient.DefaultRequestHeaders.Add("User-Agent", $"KetchupBot-Updater/{Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "1.0"}");
+        HttpClient.DefaultRequestHeaders.Add("User-Agent",
+            $"KetchupBot-Updater/{Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "1.0"}");
     }
 
     /// <summary>
-    /// Get ship data from the Galaxy Info API
+    ///     Get ship data from the Galaxy Info API
     /// </summary>
-    /// <param name="returnCachedOnError">Whether to return an internally cached version (from the last successful run, if any), if the request fails. If false, or if there is no cached version available, an <see cref="HttpRequestException"/> will be raised on error.</param>
     /// <returns>A list of ships from the Galaxy Info API with their respective data attributes</returns>
-    public async Task<Dictionary<string, Dictionary<string, string>>> GetShipsData(bool returnCachedOnError = true)
+    public async Task<Dictionary<string, Dictionary<string, string>>> GetShipsData()
     {
         using HttpResponseMessage response = await HttpClient.GetAsync($"{galaxyInfoApi.Trim()}/api/v2/galaxypedia");
 
-        switch (response.IsSuccessStatusCode)
+        try
         {
-            case false when returnCachedOnError && _cachedShipData != null:
-                // Status code is not successful, return cached data option is enabled, and there is cached data available
-                return _cachedShipData;
-            case false:
-                // Status code is not successful, and either the return cached data option is disabled or there is no cached data available
-                throw new HttpRequestException(
-                    $"Failed to fetch ship data from the Galaxy Info API: {response.ReasonPhrase}");
-            default:
+            response.EnsureSuccessStatusCode();
+
+            // If the data is already cached, return the cached data
+            if (cache.TryGetValue("ShipData", out object? value) &&
+                value is Dictionary<string, Dictionary<string, string>> cachedData) return cachedData;
+
+            string jsonResponse = await response.Content.ReadAsStringAsync();
+
+            // Deserialize the response into a Dictionary<string, Dictionary<string, string>> because the json is formatted as:
+            // {
+            //   "shiptitle":
+            //   {
+            //     "attribute": "value",
+            //   }
+            // }
+
+            Dictionary<string, Dictionary<string, string>> deserializedResponse =
+                JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, string>>>(jsonResponse) ??
+                throw new InvalidOperationException("Failed to deserialize ship data from the Galaxy Info API");
+
+            cache.Set("ShipData", deserializedResponse, new MemoryCacheEntryOptions
             {
-                // Status code is successful, update the cached data
-                string jsonResponse = await response.Content.ReadAsStringAsync();
+                // Cache the data for 30 minutes before refreshing
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(30)
+            });
 
-                // Deserialize the response into a Dictionary<string, Dictionary<string, string>> because the json is formatted as:
-                // {
-                //   "shiptitle":
-                //   {
-                //     "attribute": "value",
-                //   }
-                // }
-                var deserializedResponse = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, string>>>(jsonResponse);
+            return deserializedResponse;
+        }
+        catch (Exception e)
+        {
+            // If the data is already cached, return the cached data (since the API request failed)
+            if (cache.TryGetValue("ShipData", out object? value) &&
+                value is Dictionary<string, Dictionary<string, string>> cachedData) return cachedData;
 
-                _cachedShipData = deserializedResponse ?? throw new HttpRequestException("Failed to deserialize ship data from the Galaxy Info API");
-
-                return deserializedResponse;
-            }
+            throw new InvalidOperationException("Failed to fetch ship data from the Galaxy Info API", e);
         }
     }
 
     /// <summary>
-    /// Get turret data from the upstream API
+    ///     Get turret data from the upstream API
     /// </summary>
     /// <returns>A dictionary with the turret data</returns>
     public async Task<Dictionary<string, TurretData>?> GetTurretData()

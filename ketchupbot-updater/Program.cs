@@ -3,6 +3,7 @@ using System.Reflection;
 using ketchupbot_framework;
 using ketchupbot_framework.API;
 using ketchupbot_updater.Jobs;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -111,6 +112,7 @@ public class Program
             applicationBuilder.Services.AddQuartz();
             applicationBuilder.Services.AddQuartzHostedService();
             applicationBuilder.Services.AddSerilog();
+            applicationBuilder.Services.AddMemoryCache();
             applicationBuilder.Configuration.AddUserSecrets<Program>()
                 .AddEnvironmentVariables()
                 .AddJsonFile("appsettings.json",
@@ -150,7 +152,8 @@ public class Program
             {
                 provider.GetRequiredService<IConfiguration>();
                 return new ApiManager(provider.GetRequiredService<IConfiguration>()["GIAPI_URL"] ??
-                                      throw new InvalidOperationException("GIAPI_URL not set"));
+                                      throw new InvalidOperationException("GIAPI_URL not set"),
+                    provider.GetRequiredService<IMemoryCache>());
             });
 
             applicationBuilder.Services.AddSingleton<ShipUpdater>(provider => new ShipUpdater(

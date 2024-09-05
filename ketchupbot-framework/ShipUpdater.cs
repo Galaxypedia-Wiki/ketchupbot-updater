@@ -23,11 +23,8 @@ public partial class ShipUpdater(MwClient bot, ApiManager apiManager, bool dryRu
     /// <param name="shipDatas">The ship data to use during the update run</param>
     /// <param name="threads"></param>
     public async Task UpdateAllShips(Dictionary<string, Dictionary<string, string>>? shipDatas = null,
-        int threads = -1)
-    {
-        Dictionary<string, Dictionary<string, string>> allShips = await apiManager.GetShipsData();
-        await MassUpdateShips(allShips.Keys.ToList(), shipDatas, threads);
-    }
+        int threads = -1) =>
+        await MassUpdateShips((await apiManager.GetShipsData()).Keys.ToList(), shipDatas, threads);
 
     /// <summary>
     /// Update multiple ships using the provided data.

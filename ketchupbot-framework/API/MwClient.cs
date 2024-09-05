@@ -4,6 +4,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Web;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace ketchupbot_framework.API;
 
@@ -91,42 +92,73 @@ public class MwClient
         return data?.error == null;
     }
 
+    /// <summary>
+    /// Get the content of a single article
+    /// </summary>
+    /// <param name="title"></param>
+    /// <returns></returns>
+    /// <exception cref="InvalidOperationException"></exception>
     public async Task<string> GetArticle(string title)
     {
+        return (await GetArticles([title])).FirstOrDefault().Value ??
+               throw new InvalidOperationException("Failed to fetch article");
+    }
+
+    /// <summary>
+    /// Get the content of multiple articles
+    /// </summary>
+    /// <param name="titles"></param>
+    /// <returns>An array of page contents. Or an empty array if no pages were found</returns>
+    /// <exception cref="InvalidOperationException"></exception>
+    public async Task<Dictionary<string, string>> GetArticles(string[] titles)
+    {
         using HttpResponseMessage response = await Client.GetAsync(
-            $"{_baseUrl}?action=query&format=json&prop=revisions&titles={HttpUtility.UrlEncode(title)}&rvslots=*&rvprop=content&formatversion=2");
+            $"{_baseUrl}?action=query&format=json&prop=revisions&titles={string.Join("|", titles.Select(HttpUtility.UrlEncode))}&rvslots=*&rvprop=content&formatversion=2");
 
         response.EnsureSuccessStatusCode();
 
         string jsonResponse = await response.Content.ReadAsStringAsync();
 
-        dynamic? data = JsonConvert.DeserializeObject<dynamic>(jsonResponse);
+        dynamic data = JsonConvert.DeserializeObject<dynamic>(jsonResponse) ?? throw new InvalidOperationException("Failed to deserialize response");
 
-        return ExtractPageContent(data) ?? throw new InvalidOperationException("Failed to fetch article");
+        JArray? pages = data.query?.pages;
+
+        if (pages == null || pages.Count == 0)
+            return [];
+
+        Dictionary<string, string> articles = new();
+
+        foreach (dynamic page in pages)
+        {
+            string? content = ExtractPageContent(page);
+            if (!string.IsNullOrEmpty(content) && page.title != null)
+                articles.Add(page.title.ToString(), content);
+        }
+
+        return articles;
     }
 
-    private static string? ExtractPageContent(dynamic? data)
+    private static string? ExtractPageContent(dynamic page)
     {
-        if (data == null)
+        if (page == null)
             return null;
 
-        if (data.query?.pages == null || data.query.pages.Count <= 0)
+        if (page.revisions == null || page.revisions.Count <= 0)
             return null;
 
-        dynamic? page = data.query.pages[0];
-
-        if (page?.revisions == null || page?.revisions.Count <= 0)
-            return null;
-
-        dynamic? revision = page?.revisions[0];
+        dynamic? revision = page.revisions[0];
         return revision?.slots?.main?.content;
     }
 
-    public async Task EditArticle(string title, string newContent, string summary, bool? dryRun = false)
+    /// <summary>
+    /// Edit an article on the wiki with the provided content
+    /// </summary>
+    /// <param name="title">The title of the page to edit</param>
+    /// <param name="newContent">The new content of the page</param>
+    /// <param name="summary">The edit summary</param>
+    /// <exception cref="InvalidOperationException"></exception>
+    public async Task EditArticle(string title, string newContent, string summary)
     {
-        // If dry run is enabled, don't actually make the edit. Mock success instead.
-        if (dryRun == true) return;
-
         if (await IsLoggedIn() == false)
             throw new InvalidOperationException("Not logged in");
 

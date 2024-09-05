@@ -30,9 +30,9 @@ public partial class ShipUpdater(MwClient bot, ApiManager apiManager, bool dryRu
     }
 
     /// <summary>
-    ///
+    /// Update multiple ships using the provided data.
     /// </summary>
-    /// <param name="ships"></param>
+    /// <param name="ships">A list of ships to update</param>
     /// <param name="shipDatas"></param>
     /// <param name="threads"></param>
     public async Task MassUpdateShips(List<string> ships, Dictionary<string, Dictionary<string, string>>? shipDatas = null, int threads = -1)
@@ -40,6 +40,8 @@ public partial class ShipUpdater(MwClient bot, ApiManager apiManager, bool dryRu
         var massUpdateStart = Stopwatch.StartNew();
         shipDatas ??= await apiManager.GetShipsData();
         ArgumentNullException.ThrowIfNull(shipDatas);
+
+        Dictionary<string, string> articles = await bot.GetArticles(ships.ToArray());
 
         await Parallel.ForEachAsync(ships, new ParallelOptions {
             MaxDegreeOfParallelism = threads
@@ -51,7 +53,7 @@ public partial class ShipUpdater(MwClient bot, ApiManager apiManager, bool dryRu
                 var updateStart = Stopwatch.StartNew();
 #endif
                 Log.Information("{Identifier} Updating ship...", GetShipIdentifier(ship));
-                await UpdateShip(ship, shipDatas.GetValueOrDefault(ship));
+                await UpdateShip(ship, shipDatas.GetValueOrDefault(ship), articles.GetValueOrDefault(ship));
 #if DEBUG
                 updateStart.Stop();
                 Log.Information("{ShipIdentifier)} Updated ship in {UpdateStartElapsedMilliseconds}ms", GetShipIdentifier(ship), updateStart.ElapsedMilliseconds);
@@ -78,7 +80,8 @@ public partial class ShipUpdater(MwClient bot, ApiManager apiManager, bool dryRu
     /// </summary>
     /// <param name="ship">The name of the ship to update</param>
     /// <param name="data">Supply a <see cref="Dictionary{TKey,TValue}"/> to use for updating. If left null, it will be fetched for you, but this is very bandwidth intensive for mass updating. It is better to grab it beforehand, filter the data for the specific <see cref="Dictionary{TKey,TValue}"/> needed, and pass that to the functions.</param>
-    private async Task UpdateShip(string ship, Dictionary<string, string>? data = null)
+    /// <param name="shipArticle">Provide a string to use as an article. If left null, it will be fetched based on <paramref name="ship"/></param>
+    private async Task UpdateShip(string ship, Dictionary<string, string>? data = null, string? shipArticle = null)
     {
         ship = GetShipName(ship);
 
@@ -104,7 +107,7 @@ public partial class ShipUpdater(MwClient bot, ApiManager apiManager, bool dryRu
         var fetchArticleStart = Stopwatch.StartNew();
 #endif
 
-        string article = await bot.GetArticle(ship); // Throws exception if article does not exist
+        shipArticle ??= await bot.GetArticle(ship); // Throws exception if article does not exist
 
 #if DEBUG
         fetchArticleStart.Stop();
@@ -112,14 +115,14 @@ public partial class ShipUpdater(MwClient bot, ApiManager apiManager, bool dryRu
 #endif
         #endregion
 
-        if (IGNORE_FLAG_REGEX().IsMatch(article.ToLower())) throw new InvalidOperationException("Found ignore flag in article");
+        if (IGNORE_FLAG_REGEX().IsMatch(shipArticle.ToLower())) throw new InvalidOperationException("Found ignore flag in article");
 
         #region Infobox Parsing Logic
 #if DEBUG
         var parsingInfoboxStart = Stopwatch.StartNew();
 #endif
 
-        Dictionary<string, string> parsedInfobox = WikiParser.ParseInfobox(WikiParser.ExtractInfobox(article));
+        Dictionary<string, string> parsedInfobox = WikiParser.ParseInfobox(WikiParser.ExtractInfobox(shipArticle));
 
 #if DEBUG
         parsingInfoboxStart.Stop();
@@ -174,7 +177,7 @@ public partial class ShipUpdater(MwClient bot, ApiManager apiManager, bool dryRu
         var wikitextConstructionStart = Stopwatch.StartNew();
 #endif
 
-        string newWikitext = WikiParser.ReplaceInfobox(article, WikiParser.ObjectToWikitext(sanitizedData.Item1));
+        string newWikitext = WikiParser.ReplaceInfobox(shipArticle, WikiParser.ObjectToWikitext(sanitizedData.Item1));
 
 #if DEBUG
         wikitextConstructionStart.Stop();
@@ -200,7 +203,8 @@ public partial class ShipUpdater(MwClient bot, ApiManager apiManager, bool dryRu
             editSummary.AppendLine("Removed parameters: " + string.Join(", ", sanitizedData.Item2));
         }
 
-        await bot.EditArticle(ship, newWikitext, editSummary.ToString(), dryRun);
+        if (!dryRun)
+            await bot.EditArticle(ship, newWikitext, editSummary.ToString());
 
 #if DEBUG
         articleEditStart.Stop();

@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text;
 using System.Text.RegularExpressions;
 using ketchupbot_framework.API;
 using Serilog;
@@ -22,18 +23,13 @@ public partial class ShipUpdater(MwClient bot, ApiManager apiManager, bool dryRu
     /// <param name="shipDatas">The ship data to use during the update run</param>
     /// <param name="threads"></param>
     public async Task UpdateAllShips(Dictionary<string, Dictionary<string, string>>? shipDatas = null,
-        int threads = -1)
-    {
-        Dictionary<string, Dictionary<string, string>>? allShips = await apiManager.GetShipsData();
-        ArgumentNullException.ThrowIfNull(allShips);
-
-        await MassUpdateShips(allShips.Keys.ToList(), shipDatas, threads);
-    }
+        int threads = -1) =>
+        await MassUpdateShips((await apiManager.GetShipsData()).Keys.ToList(), shipDatas, threads);
 
     /// <summary>
-    ///
+    /// Update multiple ships using the provided data.
     /// </summary>
-    /// <param name="ships"></param>
+    /// <param name="ships">A list of ships to update</param>
     /// <param name="shipDatas"></param>
     /// <param name="threads"></param>
     public async Task MassUpdateShips(List<string> ships, Dictionary<string, Dictionary<string, string>>? shipDatas = null, int threads = -1)
@@ -41,6 +37,8 @@ public partial class ShipUpdater(MwClient bot, ApiManager apiManager, bool dryRu
         var massUpdateStart = Stopwatch.StartNew();
         shipDatas ??= await apiManager.GetShipsData();
         ArgumentNullException.ThrowIfNull(shipDatas);
+
+        Dictionary<string, string> articles = await bot.GetArticles(ships.ToArray());
 
         await Parallel.ForEachAsync(ships, new ParallelOptions {
             MaxDegreeOfParallelism = threads
@@ -52,7 +50,7 @@ public partial class ShipUpdater(MwClient bot, ApiManager apiManager, bool dryRu
                 var updateStart = Stopwatch.StartNew();
 #endif
                 Log.Information("{Identifier} Updating ship...", GetShipIdentifier(ship));
-                await UpdateShip(ship, shipDatas.GetValueOrDefault(ship));
+                await UpdateShip(ship, shipDatas.GetValueOrDefault(ship), articles.GetValueOrDefault(ship));
 #if DEBUG
                 updateStart.Stop();
                 Log.Information("{ShipIdentifier)} Updated ship in {UpdateStartElapsedMilliseconds}ms", GetShipIdentifier(ship), updateStart.ElapsedMilliseconds);
@@ -79,7 +77,8 @@ public partial class ShipUpdater(MwClient bot, ApiManager apiManager, bool dryRu
     /// </summary>
     /// <param name="ship">The name of the ship to update</param>
     /// <param name="data">Supply a <see cref="Dictionary{TKey,TValue}"/> to use for updating. If left null, it will be fetched for you, but this is very bandwidth intensive for mass updating. It is better to grab it beforehand, filter the data for the specific <see cref="Dictionary{TKey,TValue}"/> needed, and pass that to the functions.</param>
-    private async Task UpdateShip(string ship, Dictionary<string, string>? data = null)
+    /// <param name="shipArticle">Provide a string to use as an article. If left null, it will be fetched based on <paramref name="ship"/></param>
+    private async Task UpdateShip(string ship, Dictionary<string, string>? data = null, string? shipArticle = null)
     {
         ship = GetShipName(ship);
 
@@ -105,7 +104,7 @@ public partial class ShipUpdater(MwClient bot, ApiManager apiManager, bool dryRu
         var fetchArticleStart = Stopwatch.StartNew();
 #endif
 
-        string article = await bot.GetArticle(ship); // Throws exception if article does not exist
+        shipArticle ??= await bot.GetArticle(ship); // Throws exception if article does not exist
 
 #if DEBUG
         fetchArticleStart.Stop();
@@ -113,14 +112,14 @@ public partial class ShipUpdater(MwClient bot, ApiManager apiManager, bool dryRu
 #endif
         #endregion
 
-        if (IGNORE_FLAG_REGEX().IsMatch(article.ToLower())) throw new InvalidOperationException("Found ignore flag in article");
+        if (IGNORE_FLAG_REGEX().IsMatch(shipArticle.ToLower())) throw new InvalidOperationException("Found ignore flag in article");
 
         #region Infobox Parsing Logic
 #if DEBUG
         var parsingInfoboxStart = Stopwatch.StartNew();
 #endif
 
-        Dictionary<string, string> parsedInfobox = WikiParser.ParseInfobox(WikiParser.ExtractInfobox(article));
+        Dictionary<string, string> parsedInfobox = WikiParser.ParseInfobox(WikiParser.ExtractInfobox(shipArticle));
 
 #if DEBUG
         parsingInfoboxStart.Stop();
@@ -175,7 +174,7 @@ public partial class ShipUpdater(MwClient bot, ApiManager apiManager, bool dryRu
         var wikitextConstructionStart = Stopwatch.StartNew();
 #endif
 
-        string newWikitext = WikiParser.ReplaceInfobox(article, WikiParser.ObjectToWikitext(sanitizedData.Item1));
+        string newWikitext = WikiParser.ReplaceInfobox(shipArticle, WikiParser.ObjectToWikitext(sanitizedData.Item1));
 
 #if DEBUG
         wikitextConstructionStart.Stop();
@@ -188,8 +187,21 @@ public partial class ShipUpdater(MwClient bot, ApiManager apiManager, bool dryRu
         var articleEditStart = Stopwatch.StartNew();
 #endif
 
-        // TODO: Make the edit summary more descriptive. Add in added, changed, and removed parameters.
-        await bot.EditArticle(ship, newWikitext, "Automated ship data update", dryRun);
+        var editSummary = new StringBuilder();
+        editSummary.AppendLine("Automated ship data update.");
+
+        if (mergedData.Item2.Count > 0)
+        {
+            editSummary.AppendLine("Updated parameters: " + string.Join(", ", mergedData.Item2));
+        }
+
+        if (sanitizedData.Item2.Count > 0)
+        {
+            editSummary.AppendLine("Removed parameters: " + string.Join(", ", sanitizedData.Item2));
+        }
+
+        if (!dryRun)
+            await bot.EditArticle(ship, newWikitext, editSummary.ToString());
 
 #if DEBUG
         articleEditStart.Stop();

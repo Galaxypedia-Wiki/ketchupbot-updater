@@ -1,0 +1,11 @@
+﻿services:
+  ketchupbot-updater:
+    image: ketchupbot-updater
+    restart: unless-stopped
+    command: --turrets -ss "0 0 * ? * * *"
+    env_file:
+      - .env
+    build:
+      context: .
+      dockerfile: ketchupbot-updater/Dockerfile
+

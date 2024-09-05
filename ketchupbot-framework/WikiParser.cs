@@ -5,28 +5,10 @@ using Newtonsoft.Json.Linq;
 namespace ketchupbot_framework;
 
 /// <summary>
-/// Class that contains methods for parsing and manipulating wikitext & ship infobox json's
+///     Class that contains methods for parsing and manipulating wikitext and ship infobox jsons
 /// </summary>
 public static partial class WikiParser
 {
-    #region Regexes
-
-    [GeneratedRegex(
-        @"{{\s*Ship[ _]Infobox(?:[^{}]|{{[^{}]*}}|{{{[^{}]*}}})+(?:(?!{{(?:[^{}]|{{[^{}]*}}|{{{[^{}]*}}})*)}})",
-        RegexOptions.Singleline | RegexOptions.IgnoreCase)]
-    private static partial Regex SHIP_INFOBOX_REGEX();
-
-    [GeneratedRegex("""{\|\s*class="wikitable sortable".*?\|}""", RegexOptions.Singleline | RegexOptions.IgnoreCase)]
-    private static partial Regex TURRET_TABLE_REGEX();
-
-    [GeneratedRegex(@"\[\[|]]|\{\{|}}|\|")]
-    private static partial Regex PairRegex();
-
-    [GeneratedRegex(@"<gallery.*?>.*?</gallery>", RegexOptions.Singleline)]
-    private static partial Regex GalleryRegex();
-
-    #endregion
-
     private static List<string> SplitTemplate(string text)
     {
         List<string> parts = [];
@@ -41,12 +23,11 @@ public static partial class WikiParser
             string symbol = match.Value;
             int index = match.Index;
 
-            // I just want to say to anyone (I guess just me) who is reading this in the future, the reason why we use
-            // AsSpan here instead of just Substring is because AsSpan will essentially create a reference to a certain
-            // part of the original string, which is more efficient than creating a new string every time we want to get
-            // a substring. This saves on memory, so yea. Though, this entire section should probably be flushed out and
-            // rewritten to be more efficient. Can probably use something like StringBuilder to make this more
-            // efficient.
+            // The reason why we use AsSpan here instead of just Substring is because AsSpan will essentially create a
+            // reference to a certain part of the original string, which is more efficient than creating a new string
+            // every time we want to get a substring. This saves on memory, so yea. Though, this entire section should
+            // probably be flushed out and rewritten to be more efficient. Can probably use something like StringBuilder
+            // to make this more efficient.
 
             switch (symbol)
             {
@@ -73,7 +54,9 @@ public static partial class WikiParser
                         currentPart = "";
                     }
                     else
+                    {
                         currentPart += string.Concat(text.AsSpan(lastIndex, index - lastIndex), "|");
+                    }
 
                     break;
             }
@@ -87,7 +70,7 @@ public static partial class WikiParser
     }
 
     /// <summary>
-    /// Parses a ship infobox in wikitext into a dictionary of key-value pairs
+    ///     Parses a ship infobox in wikitext into a dictionary of key-value pairs
     /// </summary>
     /// <param name="text">The wikitext input of JUST the template</param>
     /// <returns>A dictionary of key value pairs. The key is the parameter name, and the value is the parameter value</returns>
@@ -122,12 +105,14 @@ public static partial class WikiParser
     }
 
     /// <summary>
-    /// Extracts the infobox from an entire page
+    ///     Extracts the infobox from an entire page
     /// </summary>
     /// <param name="text">A page in wikitext</param>
     /// <returns>A string of just the infobox template, in wikitext format</returns>
-    /// <exception cref="InvalidOperationException">Throws an exception if the infobox cannot be found on the page. This
-    /// likely means that the page lacks an infobox, or has a malformed infobox</exception>
+    /// <exception cref="InvalidOperationException">
+    ///     Throws an exception if the infobox cannot be found on the page. This
+    ///     likely means that the page lacks an infobox, or has a malformed infobox
+    /// </exception>
     public static string ExtractInfobox(string text)
     {
         Match match = SHIP_INFOBOX_REGEX().Match(text);
@@ -137,12 +122,19 @@ public static partial class WikiParser
     }
 
     /// <summary>
-    /// Merges two dictionaries together, and returns a tuple of the merged dictionary, and a list of updated
-    /// parameters. This preforms a two-way merge, where the new data is merged into the old data.
+    ///     Merges two dictionaries together, and returns a tuple of the merged dictionary, and a list of updated
+    ///     parameters. This preforms a two-way merge, where the new data is merged into the old data.
     /// </summary>
+    /// <remarks>
+    ///     You should run <see cref="CheckIfInfoboxesChanged" /> prior to running this function to make sure the
+    ///     infoboxes are actually different
+    /// </remarks>
     /// <param name="newData">The newer data used for updating oldData</param>
     /// <param name="oldData">The oldData that has the preexisting parameters</param>
-    /// <returns>A tuple. The first item being the merged dictionaries, and the second item being a list of parameters that were updated.</returns>
+    /// <returns>
+    ///     A tuple. The first item being the merged dictionaries, and the second item being a list of parameters that
+    ///     were updated.
+    /// </returns>
     /// <exception cref="Exception"></exception>
     public static Tuple<Dictionary<string, string>, List<string>> MergeData(Dictionary<string, string> newData,
         Dictionary<string, string> oldData)
@@ -161,14 +153,28 @@ public static partial class WikiParser
             MergeNullValueHandling = MergeNullValueHandling.Ignore
         });
 
+        #region Updated Parameter Calculation
+
         var updatedParameters = new List<string>();
 
         foreach (KeyValuePair<string, string> kvp in newData)
         {
             // If the key is in the parameter exclusions list, skip it. If the key is not in the old data, or the value is different, add it to the updated parameters list
+            // If the key is "title", ignore it
+            // If the value is "no" and the key is in the list of parameters to not delete if the value is no, skip it
+            // If the value is "yes" and the key is in the list of parameters to delete if the value is yes, skip it
+            // TODO: Remove the code duplication here
             if (!GlobalConfiguration.ParameterExclusions.Contains(kvp.Key) &&
-                (!oldData.TryGetValue(kvp.Key, out string? oldValue) || oldValue != kvp.Value)) updatedParameters.Add(kvp.Key);
+                (!oldData.TryGetValue(kvp.Key, out string? oldValue) || oldValue != kvp.Value) &&
+                kvp.Key != "title" &&
+                !((kvp.Value.Equals("no", StringComparison.OrdinalIgnoreCase) &&
+                   !GlobalConfiguration.ParametersToNotDeleteIfValueIsNo.Contains(kvp.Key)) ||
+                  (kvp.Value.Equals("yes", StringComparison.OrdinalIgnoreCase) &&
+                   GlobalConfiguration.ParametersToDeleteIfValueIsYes.Contains(kvp.Key))))
+                updatedParameters.Add(kvp.Key);
         }
+
+        #endregion
 
         var mergedData = oldDataJObject.ToObject<Dictionary<string, string>>();
 
@@ -181,21 +187,24 @@ public static partial class WikiParser
     }
 
     /// <summary>
-    /// Sanitize data
+    ///     Sanitize data
     /// </summary>
     /// <remarks>
-    /// Applies the following to the string:
-    /// - Newlines in description are replaced with spaces
-    /// - If the value of the parameter is a double, and the decimal is a zero, then remove it (i.e. 1.0 -> 1)
-    /// - If the value of the parameter is a double, and the decimal is not a zero, then add another zero to it (i.e. 0.2 -> 0.20)
-    /// - If the key exists in the global ist of parameters to not delete if the value is no, and the value is no, then skip it
-    /// - If the key exists in the global list of parameters to delete if the value is yes, and the value is yes, then skip it
-    /// - If the value is a number, try to add commas to it
-    /// - Remove the title1 parameter
+    ///     Applies the following to the string:
+    ///     - Newlines in description are replaced with spaces
+    ///     - If the value of the parameter is a double, and the decimal is a zero, then remove it (i.e. 1.0 -> 1)
+    ///     - If the value of the parameter is a double, and the decimal is not a zero, then add another zero to it (i.e. 0.2
+    ///     -> 0.20)
+    ///     - If the key exists in the global ist of parameters to not delete if the value is no, and the value is no, then
+    ///     skip it
+    ///     - If the key exists in the global list of parameters to delete if the value is yes, and the value is yes, then skip
+    ///     it
+    ///     - If the value is a number, try to add commas to it
+    ///     - Remove the title1 parameter
     /// </remarks>
     /// <param name="data">The data to sanitize</param>
     /// <param name="oldData">The old data pre-merge. Used for tracking removed parameters</param>
-    /// <returns></returns>
+    /// <returns>A tuple. The first item being the sanitized data. The second being parameters that were removed in sanitization</returns>
     public static Tuple<Dictionary<string, string>, List<string>> SanitizeData(Dictionary<string, string> data,
         Dictionary<string, string> oldData)
     {
@@ -217,7 +226,8 @@ public static partial class WikiParser
             }
 
             // Convert doubles that are non-zero, but have a zero decimal to an integer. So 1.0 becomes 1. But convert 0.2 to 0.20
-            if (double.TryParse(value, out double doubleValue)) value = doubleValue.ToString(doubleValue % 1 == 0 ? "N0" : "N2");
+            if (double.TryParse(value, out double doubleValue))
+                value = doubleValue.ToString(doubleValue % 1 == 0 ? "N0" : "N2");
 
             // Check if the value is a number, and try to add commas to it. But only for integers, not doubles, to not override what we did above. Also don't do it for the title key
             if (int.TryParse(value, out int intValue) && key != "title") value = intValue.ToString("N0");
@@ -244,7 +254,7 @@ public static partial class WikiParser
     }
 
     /// <summary>
-    /// Convert a Dictionary to a wikitext ship infobox
+    ///     Convert a Dictionary to a wikitext ship infobox
     /// </summary>
     /// <param name="data">The dictionary to convert to wikitext</param>
     /// <returns>A string with the dictionary but in wikitext</returns>
@@ -265,28 +275,34 @@ public static partial class WikiParser
 
 
     /// <summary>
-    /// Replace the infobox in a page with a new infobox
+    ///     Replace the infobox in a page with a new infobox
     /// </summary>
     /// <param name="text">The page</param>
     /// <param name="infobox">The new infobox to replace the old one with</param>
     /// <returns>The new page wikitext with the replaced infobox. Or the original wikitext if the infobox could not be found.</returns>
-    public static string ReplaceInfobox(string text, string infobox) => SHIP_INFOBOX_REGEX().Replace(text, infobox);
+    public static string ReplaceInfobox(string text, string infobox)
+    {
+        return SHIP_INFOBOX_REGEX().Replace(text, infobox);
+    }
 
     /// <summary>
-    /// Check two dictionaries to see if they are different
+    ///     Check two dictionaries to see if they are different
     /// </summary>
     /// <param name="oldData">The old dictionary</param>
     /// <param name="newData">The new dictionary</param>
     /// <returns>Whether they differ or not</returns>
     public static bool
-        CheckIfInfoboxesChanged(Dictionary<string, string> oldData, Dictionary<string, string> newData) =>
-        !oldData.OrderBy(pair => pair.Key).SequenceEqual(newData.OrderBy(pair => pair.Key));
+        CheckIfInfoboxesChanged(Dictionary<string, string> oldData, Dictionary<string, string> newData)
+    {
+        // ReSharper disable once UsageOfDefaultStructEquality
+        return !oldData.OrderBy(pair => pair.Key).SequenceEqual(newData.OrderBy(pair => pair.Key));
+    }
 
     /// <summary>
-    /// Extracts turret tables from a page
+    ///     Extracts turret tables from a page
     /// </summary>
     /// <param name="text">The article to extract from</param>
-    /// <returns>A <see cref="MatchCollection"/> with the turret tables</returns>
+    /// <returns>A <see cref="MatchCollection" /> with the turret tables</returns>
     /// <exception cref="Exception"></exception>
     public static MatchCollection ExtractTurretTables(string text)
     {
@@ -300,4 +316,23 @@ public static partial class WikiParser
             _ => turretTables
         };
     }
+
+    #region Regexes
+
+    [GeneratedRegex(
+        @"{{\s*Ship[ _]Infobox(?:[^{}]|{{[^{}]*}}|{{{[^{}]*}}})+(?:(?!{{(?:[^{}]|{{[^{}]*}}|{{{[^{}]*}}})*)}})",
+        RegexOptions.Singleline | RegexOptions.IgnoreCase)]
+    private static partial Regex SHIP_INFOBOX_REGEX();
+
+    [GeneratedRegex("""{\|\s*class="wikitable sortable".*?\|}""", RegexOptions.Singleline | RegexOptions.IgnoreCase)]
+    private static partial Regex TURRET_TABLE_REGEX();
+
+    [GeneratedRegex(@"\[\[|]]|\{\{|}}|\|")]
+    private static partial Regex PairRegex();
+
+    [GeneratedRegex(@"<gallery.*?>.*?</gallery>", RegexOptions.Singleline)]
+    private static partial Regex GalleryRegex();
+
+    #endregion
+
 }

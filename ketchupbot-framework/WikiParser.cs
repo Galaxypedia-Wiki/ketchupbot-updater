@@ -157,7 +157,7 @@ public static partial class WikiParser
             newDataJObject["(g)_spinal"] = spinal2;
         }
 
-        // Remove all spinal keys from the new data
+        // Remove all other spinal keys from the new data
         foreach (JProperty idk in newDataJObject.Properties().ToList().Where(idk => idk.Name.StartsWith("spinal_") && idk.Name != "spinal_dps"))
         {
             newDataJObject.Remove(idk.Name);

@@ -260,9 +260,9 @@ public class Program
             #region Ship Option Handler
 
             string[] shipsOptionValue = handler.ParseResult.GetValueForOption(shipsOption)!;
-            if (shipsOptionValue.First() != "none" && shipScheduleOptionValue == null)
+            if (!shipsOptionValue.First().Equals("none", StringComparison.CurrentCultureIgnoreCase) && shipScheduleOptionValue == null)
             {
-                if (shipsOptionValue.First() == "all")
+                if (shipsOptionValue.First().Equals("all", StringComparison.CurrentCultureIgnoreCase))
                 {
                     await app.Services.GetRequiredService<ShipUpdater>().UpdateAllShips();
                 }

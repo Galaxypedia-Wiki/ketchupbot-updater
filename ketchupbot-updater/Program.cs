@@ -132,23 +132,20 @@ public class Program
 
             #endregion
 
+#if !DEBUG
             SentrySdk.Init(options =>
             {
                 options.Dsn = configuration["SENTRY_DSN"];
                 options.AutoSessionTracking = true;
                 options.TracesSampleRate = 1.0;
                 options.ProfilesSampleRate = 1.0;
-
-#if DEBUG
-                options.Debug = true;
-#endif
             });
-
+#endif
             var mwClient = new MwClient(configuration["MWUSERNAME"] ?? throw new InvalidOperationException("MWUSERNAME not set"),
                 configuration["MWPASSWORD"] ?? throw new InvalidOperationException("MWPASSWORD not set"));
             Log.Information("Logged into the Galaxypedia");
             var apiManager = new ApiManager(configuration["GIAPI_URL"] ?? throw new InvalidOperationException("GIAPI_URL not set"));
-            var shipUpdater = new ShipUpdater(mwClient, apiManager);
+            var shipUpdater = new ShipUpdater(mwClient, apiManager, DryRun);
 
             #region Scheduling Logic
 

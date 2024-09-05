@@ -9,9 +9,9 @@ namespace ketchupbot_framework;
 /// <summary>
 /// Ship updater class to facilitate updating ship pages. You should pass this class to other classes via dependency injection.
 /// </summary>
-/// <param name="bot">The <see cref="MwClient"/> instance to use for interacting with the wiki</param>
+/// <param name="bot">The <see cref="MediaWikiClient"/> instance to use for interacting with the wiki</param>
 /// <param name="apiManager">The <see cref="ketchupbot_framework.API.ApiManager"/> instance to use for making API requests</param>
-public partial class ShipUpdater(MwClient bot, ApiManager apiManager, bool dryRun = false)
+public partial class ShipUpdater(MediaWikiClient bot, ApiManager apiManager, bool dryRun = false)
 {
     private static string GetShipName(string data) => GlobalConfiguration.ShipNameMap.GetValueOrDefault(data, data);
 

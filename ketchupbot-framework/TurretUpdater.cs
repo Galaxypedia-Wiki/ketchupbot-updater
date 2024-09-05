@@ -4,7 +4,7 @@ using ketchupbot_framework.Types;
 
 namespace ketchupbot_framework;
 
-public class TurretUpdater(MwClient mwClient, ApiManager apiManager)
+public class TurretUpdater(MediaWikiClient mediaWikiClient, ApiManager apiManager)
 {
     public async Task UpdateTurrets(Dictionary<string, TurretData>? turretData = null)
     {
@@ -12,7 +12,7 @@ public class TurretUpdater(MwClient mwClient, ApiManager apiManager)
 
         if (turretData == null) throw new Exception("Failed to fetch turret data");
 
-        string turretPageWikitext = await mwClient.GetArticle("Turrets");
+        string turretPageWikitext = await mediaWikiClient.GetArticle("Turrets");
 
         MatchCollection turretTables = WikiParser.ExtractTurretTables(turretPageWikitext);
         string newTurretPageWikitext = turretPageWikitext;
@@ -53,7 +53,7 @@ public class TurretUpdater(MwClient mwClient, ApiManager apiManager)
         if (newTurretPageWikitext == turretPageWikitext)
             throw new Exception("Turrets page is up to date");
 
-        await mwClient.EditArticle("Turrets", newTurretPageWikitext, "Updating turrets");
+        await mediaWikiClient.EditArticle("Turrets", newTurretPageWikitext, "Updating turrets");
     }
 
     // TODO: Maybe in the future provide a way to update a single turret. This isn't really needed right now, so I'm not

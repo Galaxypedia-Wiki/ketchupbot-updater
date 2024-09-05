@@ -20,7 +20,7 @@ namespace ketchupbot_updater;
 /// </summary>
 public class Program
 {
-    public static bool DryRun { get; private set; }
+    private static bool DryRun { get; set; }
 
     private static async Task<int> Main(string[] args)
     {
@@ -111,7 +111,11 @@ public class Program
             applicationBuilder.Services.AddQuartz();
             applicationBuilder.Services.AddQuartzHostedService();
             applicationBuilder.Services.AddSerilog();
-            applicationBuilder.Configuration.AddUserSecrets<Program>();
+            applicationBuilder.Configuration.AddUserSecrets<Program>()
+                .AddEnvironmentVariables()
+                .AddJsonFile("appsettings.json",
+                    true,
+                    true);
 
             #region Configuration
 
@@ -132,39 +136,57 @@ public class Program
 
             #endregion
 
-            applicationBuilder.Services.AddSingleton<MwClient>(provider =>
+            applicationBuilder.Services.AddSingleton<MediaWikiClient>(provider =>
             {
                 provider.GetRequiredService<IConfiguration>();
 
-                return new MwClient(provider.GetRequiredService<IConfiguration>()["MWUSERNAME"] ?? throw new InvalidOperationException("MWUSERNAME not set"),
-                    provider.GetRequiredService<IConfiguration>()["MWPASSWORD"] ?? throw new InvalidOperationException("MWPASSWORD not set"));
+                return new MediaWikiClient(provider.GetRequiredService<IConfiguration>()["MWUSERNAME"] ??
+                                    throw new InvalidOperationException("MWUSERNAME not set"),
+                    provider.GetRequiredService<IConfiguration>()["MWPASSWORD"] ??
+                    throw new InvalidOperationException("MWPASSWORD not set"));
             });
-            Log.Information("Logged into the Galaxypedia");
 
             applicationBuilder.Services.AddSingleton<ApiManager>(provider =>
             {
                 provider.GetRequiredService<IConfiguration>();
-
-                return new ApiManager(provider.GetRequiredService<IConfiguration>()["GIAPI_URL"] ?? throw new InvalidOperationException("GIAPI_URL not set"));
+                return new ApiManager(provider.GetRequiredService<IConfiguration>()["GIAPI_URL"] ??
+                                      throw new InvalidOperationException("GIAPI_URL not set"));
             });
 
-            applicationBuilder.Services.AddSingleton<ShipUpdater>();
+            applicationBuilder.Services.AddSingleton<ShipUpdater>(provider => new ShipUpdater(
+                provider.GetRequiredService<MediaWikiClient>(),
+                provider.GetRequiredService<ApiManager>(),
+                DryRun));
+
+            bool turrets = handler.ParseResult.GetValueForOption(turretsOption);
+
+            if (turrets)
+            {
+                applicationBuilder.Services.AddSingleton<TurretUpdater>(provider => new TurretUpdater(
+                    provider.GetRequiredService<MediaWikiClient>(),
+                    provider.GetRequiredService<ApiManager>()));
+            }
 
             IHost app = applicationBuilder.Build();
+
+            if (await app.Services.GetRequiredService<MediaWikiClient>().IsLoggedIn())
+            {
+                Log.Information("Logged in to MediaWiki");
+            }
+            else
+            {
+                Log.Error("Using MediaWiki anonymously. Editing will not be possible.");
+            }
+
 #if !DEBUG
             SentrySdk.Init(options =>
             {
-                options.Dsn = configuration["SENTRY_DSN"];
+                options.Dsn = applicationBuilder.Configuration["SENTRY_DSN"];
                 options.AutoSessionTracking = true;
                 options.TracesSampleRate = 1.0;
                 options.ProfilesSampleRate = 1.0;
             });
 #endif
-            var mwClient = new MwClient(configuration["MWUSERNAME"] ?? throw new InvalidOperationException("MWUSERNAME not set"),
-                configuration["MWPASSWORD"] ?? throw new InvalidOperationException("MWPASSWORD not set"));
-            Log.Information("Logged into the Galaxypedia");
-            var apiManager = new ApiManager(configuration["GIAPI_URL"] ?? throw new InvalidOperationException("GIAPI_URL not set"));
-            var shipUpdater = new ShipUpdater(mwClient, apiManager, DryRun);
 
             #region Scheduling Logic
 
@@ -200,7 +222,8 @@ public class Program
                         .Build();
 
                     await scheduler.ScheduleJob(massUpdateJob, massUpdateTrigger);
-                    Console.WriteLine($"Scheduled ship mass update job for {massUpdateTrigger.GetNextFireTimeUtc()?.ToLocalTime()}");
+                    Console.WriteLine(
+                        $"Scheduled ship mass update job for {massUpdateTrigger.GetNextFireTimeUtc()?.ToLocalTime()}");
                     Console.WriteLine("Running a mass update job now...");
                     await scheduler.TriggerJob(new JobKey("massUpdateJob", "group1"));
                 }
@@ -211,7 +234,9 @@ public class Program
                         .WithIdentity("turretUpdateJob", "group1")
                         .Build();
 
-                    turretUpdateJob.JobDataMap.Put("turretUpdater", new TurretUpdater(app.Services.GetRequiredService<MwClient>(), app.Services.GetRequiredService<ApiManager>()));
+                    turretUpdateJob.JobDataMap.Put("turretUpdater",
+                        new TurretUpdater(app.Services.GetRequiredService<MediaWikiClient>(),
+                            app.Services.GetRequiredService<ApiManager>()));
 
                     ITrigger turretUpdateTrigger = TriggerBuilder.Create()
                         .WithIdentity("turretUpdateTrigger", "group1")
@@ -231,11 +256,13 @@ public class Program
 
             #region Ship Option Handler
 
-            string[]? shipsOptionValue = handler.ParseResult.GetValueForOption(shipsOption);
-            if (shipsOptionValue != null && shipsOptionValue.First() != "none" && shipScheduleOptionValue == null)
+            string[] shipsOptionValue = handler.ParseResult.GetValueForOption(shipsOption)!;
+            if (shipsOptionValue.First() != "none" && shipScheduleOptionValue == null)
             {
                 if (shipsOptionValue.First() == "all")
+                {
                     await app.Services.GetRequiredService<ShipUpdater>().UpdateAllShips();
+                }
                 else
                 {
                     await app.Services.GetRequiredService<ShipUpdater>().MassUpdateShips(shipsOptionValue.ToList());
@@ -246,13 +273,11 @@ public class Program
 
             #region Turret Option Handler
 
-            bool turrets = handler.ParseResult.GetValueForOption(turretsOption);
-            if (turrets)
-                await new TurretUpdater(app.Services.GetRequiredService<MwClient>(),
-                    app.Services.GetRequiredService<ApiManager>()).UpdateTurrets();
+            if (turrets && turretScheduleOptionValue == null) await app.Services.GetRequiredService<TurretUpdater>().UpdateTurrets();
 
             #endregion
         });
 
         return await rootCommand.InvokeAsync(args);
     }
+}

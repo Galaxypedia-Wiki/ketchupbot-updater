@@ -3,9 +3,9 @@ namespace ketchupbot_updater_tests.ShipUpdater;
 
 public class UpdateAllShipsTests
 {
-    // In order to begin writing tests for the UpdateAllShips method, I need to make MwClient available without being logged in. This should allow it to be Mock-able
+    // In order to begin writing tests for the UpdateAllShips method, I need to make MediaWikiClient available without being logged in. This should allow it to be Mock-able
     /*
-    private static readonly Mock<MwClient> MockBot = new();
+    private static readonly Mock<MediaWikiClient> MockBot = new();
     private static readonly Mock<ApiManager> MockApiManager = new();
     private readonly ketchupbot_updater.ShipUpdater _shipUpdater = new(MockBot.Object, MockApiManager.Object);
 

@@ -8,7 +8,7 @@ using Newtonsoft.Json.Linq;
 
 namespace ketchupbot_framework.API;
 
-public class MwClient
+public class MediaWikiClient
 {
     protected static readonly HttpClient Client = new(new HttpClientHandler
     {
@@ -26,7 +26,7 @@ public class MwClient
     /// <param name="password">Password to use for logging in</param>
     /// <param name="baseUrl"></param>
     /// <exception cref="InvalidOperationException"></exception>
-    public MwClient(string? username = null, string? password = null, string baseUrl = "https://galaxypedia.org/api.php")
+    public MediaWikiClient(string? username = null, string? password = null, string baseUrl = "https://galaxypedia.org/api.php")
     {
         _baseUrl = baseUrl;
 
@@ -76,7 +76,7 @@ public class MwClient
     }
 
     /// <summary>
-    /// Check whether the MwClient is currently logged in or not
+    /// Check whether the MediaWikiClient is currently logged in or not
     /// </summary>
     /// <returns></returns>
     public async Task<bool> IsLoggedIn()

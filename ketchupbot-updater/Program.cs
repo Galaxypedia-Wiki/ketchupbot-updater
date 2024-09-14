@@ -1,4 +1,5 @@
 ﻿using System.CommandLine;
+using System.Net;
 using System.Reflection;
 using ketchupbot_framework;
 using ketchupbot_framework.API;
@@ -7,6 +8,8 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Polly;
+using Polly.Extensions.Http;
 using Quartz;
 using Quartz.Impl;
 using Serilog;
@@ -17,7 +20,7 @@ using Serilog.Sinks.SystemConsole.Themes;
 namespace ketchupbot_updater;
 
 /// <summary>
-/// Entrypoint, configuration, and initialization for the updater component
+///     Entrypoint, configuration, and initialization for the updater component
 /// </summary>
 public class Program
 {
@@ -58,12 +61,12 @@ public class Program
 
         var threadCountOption = new Option<int>(
             "--threads",
-            getDefaultValue: () => 0,
+            () => 0,
             "Number of threads to use when updating ships. Set to 1 for single threaded execution, 0 for automatic (let the the .NET runtime manage the thread count dynamically).");
 
         var secretsDirectoryOption = new Option<string>(
             "--secrets-directory",
-            getDefaultValue: () => AppContext.BaseDirectory,
+            () => AppContext.BaseDirectory,
             "Directory where the appsettings.json file is located. Defaults to the directory holding the executable."
         );
 
@@ -90,7 +93,9 @@ public class Program
 
         Log.Logger = new LoggerConfiguration()
             .MinimumLevel.ControlledBy(levelSwitch)
-            .Enrich.WithThreadId()
+#if !DEBUG
+            .MinimumLevel.Override("System.Net.Http.HttpClient", LogEventLevel.Warning)
+#endif
             .WriteTo.Console(theme: SystemConsoleTheme.Grayscale)
             .CreateLogger();
 
@@ -102,7 +107,10 @@ public class Program
                 if (stream == null)
                     throw new InvalidOperationException("Failed to load banner");
 
-                using (var reader = new StreamReader(stream)) Console.WriteLine(await reader.ReadToEndAsync());
+                using (var reader = new StreamReader(stream))
+                {
+                    Console.WriteLine(await reader.ReadToEndAsync());
+                }
             }
 
             Console.WriteLine(
@@ -113,7 +121,8 @@ public class Program
             applicationBuilder.Services.AddQuartzHostedService();
             applicationBuilder.Services.AddSerilog();
             applicationBuilder.Services.AddMemoryCache();
-            applicationBuilder.Configuration.AddUserSecrets<Program>()
+            applicationBuilder.Configuration
+                .AddUserSecrets<Program>()
                 .AddEnvironmentVariables()
                 .AddJsonFile("appsettings.json",
                     true,
@@ -138,12 +147,49 @@ public class Program
 
             #endregion
 
+            #region Dependencies
+
+            #region HttpClient
+
+            string userAgent =
+                $"KetchupBot-Updater/{Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "1.0"}";
+
+            applicationBuilder.Services.AddHttpClient<ApiManager>(client =>
+                {
+                    client.DefaultRequestHeaders.Add("User-Agent", userAgent);
+                })
+                // Galaxy Info's public API tends to go down rather frequently, and for hours at a time, so we go the
+                // route of retrying forever within a certain time frame. So a timeout of 5 minutes should be enough to
+                // consider the request as still achievable. Anything longer than that is a lost cause.
+                .AddPolicyHandler(Policy.TimeoutAsync<HttpResponseMessage>(TimeSpan.FromMinutes(5)))
+                .AddPolicyHandler(HttpPolicyExtensions
+                    .HandleTransientHttpError()
+                    .WaitAndRetryForeverAsync(retryAttempt =>
+                        TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)) +
+                        TimeSpan.FromMilliseconds(new Random().Next(0, 100))));
+
+            applicationBuilder.Services.AddHttpClient<MediaWikiClient>(client =>
+            {
+                client.DefaultRequestHeaders.Add("User-Agent", userAgent);
+            }).ConfigurePrimaryHttpMessageHandler(() =>
+                new HttpClientHandler
+                {
+                    UseCookies = true,
+                    // We create a new CookieContainer for each client to avoid cookie conflicts (i.e. two clients on two different accounts)
+                    CookieContainer = new CookieContainer()
+                }).AddPolicyHandler(HttpPolicyExtensions.HandleTransientHttpError()
+                .WaitAndRetryAsync(3, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt))));
+
+            #endregion
+
             applicationBuilder.Services.AddSingleton<MediaWikiClient>(provider =>
             {
                 provider.GetRequiredService<IConfiguration>();
 
-                return new MediaWikiClient(provider.GetRequiredService<IConfiguration>()["MWUSERNAME"] ??
-                                    throw new InvalidOperationException("MWUSERNAME not set"),
+                return new MediaWikiClient(
+                    provider.GetRequiredService<IHttpClientFactory>().CreateClient("MediaWikiClient"),
+                    provider.GetRequiredService<IConfiguration>()["MWUSERNAME"] ??
+                    throw new InvalidOperationException("MWUSERNAME not set"),
                     provider.GetRequiredService<IConfiguration>()["MWPASSWORD"] ??
                     throw new InvalidOperationException("MWPASSWORD not set"));
             });
@@ -151,9 +197,12 @@ public class Program
             applicationBuilder.Services.AddSingleton<ApiManager>(provider =>
             {
                 provider.GetRequiredService<IConfiguration>();
-                return new ApiManager(provider.GetRequiredService<IConfiguration>()["GIAPI_URL"] ??
-                                      throw new InvalidOperationException("GIAPI_URL not set"),
-                    provider.GetRequiredService<IMemoryCache>());
+                return new ApiManager(
+                    provider.GetRequiredService<IConfiguration>()["GIAPI_URL"] ??
+                    throw new InvalidOperationException("GIAPI_URL not set"),
+                    provider.GetRequiredService<IHttpClientFactory>().CreateClient("ApiManager"),
+                    provider.GetRequiredService<IMemoryCache>()
+                );
             });
 
             applicationBuilder.Services.AddSingleton<ShipUpdater>(provider => new ShipUpdater(
@@ -164,22 +213,18 @@ public class Program
             bool turrets = handler.ParseResult.GetValueForOption(turretsOption);
 
             if (turrets)
-            {
                 applicationBuilder.Services.AddSingleton<TurretUpdater>(provider => new TurretUpdater(
                     provider.GetRequiredService<MediaWikiClient>(),
                     provider.GetRequiredService<ApiManager>()));
-            }
 
             IHost app = applicationBuilder.Build();
 
             if (await app.Services.GetRequiredService<MediaWikiClient>().IsLoggedIn())
-            {
                 Log.Information("Logged in to MediaWiki");
-            }
             else
-            {
                 Log.Error("Using MediaWiki anonymously. Editing will not be possible.");
-            }
+
+            #endregion
 
 #if !DEBUG
             SentrySdk.Init(options =>
@@ -260,23 +305,21 @@ public class Program
             #region Ship Option Handler
 
             string[] shipsOptionValue = handler.ParseResult.GetValueForOption(shipsOption)!;
-            if (!shipsOptionValue.First().Equals("none", StringComparison.CurrentCultureIgnoreCase) && shipScheduleOptionValue == null)
+            if (!shipsOptionValue.First().Equals("none", StringComparison.CurrentCultureIgnoreCase) &&
+                shipScheduleOptionValue == null)
             {
                 if (shipsOptionValue.First().Equals("all", StringComparison.CurrentCultureIgnoreCase))
-                {
                     await app.Services.GetRequiredService<ShipUpdater>().UpdateAllShips();
-                }
                 else
-                {
                     await app.Services.GetRequiredService<ShipUpdater>().MassUpdateShips(shipsOptionValue.ToList());
-                }
             }
 
             #endregion
 
             #region Turret Option Handler
 
-            if (turrets && turretScheduleOptionValue == null) await app.Services.GetRequiredService<TurretUpdater>().UpdateTurrets();
+            if (turrets && turretScheduleOptionValue == null)
+                await app.Services.GetRequiredService<TurretUpdater>().UpdateTurrets();
 
             #endregion
         });

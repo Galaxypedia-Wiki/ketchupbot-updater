@@ -25,7 +25,8 @@ public static class HealthChecks
         {
             HttpResponseMessage response = await Client.GetAsync(url + "?status=in_progress");
             response.EnsureSuccessStatusCode();
-            Log.Information("Broadcasted in progress to {Url}", url);;
+            Log.Information("Broadcasted in progress to {Url}", url);
+            ;
         }
         catch (HttpRequestException e)
         {

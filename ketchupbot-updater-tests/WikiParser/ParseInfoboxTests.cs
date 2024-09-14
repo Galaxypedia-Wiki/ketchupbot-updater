@@ -2,7 +2,6 @@ namespace ketchupbot_updater_tests.WikiParser;
 
 public class ParseInfoboxTests
 {
-
     [Fact]
     public void ParseInfobox_ValidInfobox_ReturnsDictionary()
     {

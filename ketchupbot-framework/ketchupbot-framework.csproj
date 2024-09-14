@@ -8,7 +8,8 @@
         <Version>5.0.1</Version>
         <Description>KetchupBot-Updater: The premier Galaxypedia Updater
 
-This project is a framework/library that provides the essential tools for updating the Galaxypedia.</Description>
+            This project is a framework/library that provides the essential tools for updating the Galaxypedia.
+        </Description>
         <PackageProjectUrl>https://github.com/smallketchup82/ketchupbot-updater</PackageProjectUrl>
         <RepositoryUrl>https://github.com/smallketchup82/ketchupbot-updater</RepositoryUrl>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
@@ -16,10 +17,10 @@ This project is a framework/library that provides the essential tools for updati
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="JsonDiffPatch.Net" Version="2.3.0" />
-      <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="8.0.0" />
-      <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-      <PackageReference Include="Serilog" Version="4.0.1" />
+        <PackageReference Include="JsonDiffPatch.Net" Version="2.3.0"/>
+        <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="8.0.0"/>
+        <PackageReference Include="Newtonsoft.Json" Version="13.0.3"/>
+        <PackageReference Include="Serilog" Version="4.0.1"/>
     </ItemGroup>
-    
+
 </Project>

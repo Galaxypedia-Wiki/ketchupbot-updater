@@ -1,5 +1,3 @@
-using System.Net;
-using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 using System.Web;
@@ -10,30 +8,31 @@ namespace ketchupbot_framework.API;
 
 public class MediaWikiClient
 {
-    protected static readonly HttpClient Client = new(new HttpClientHandler
-    {
-        // Enable cookies for login session
-        UseCookies = true,
-        CookieContainer = new CookieContainer()
-    });
-
     private readonly string _baseUrl;
+    private readonly HttpClient _httpClient;
 
     /// <summary>
     ///     Client for interacting with the MediaWiki API
     /// </summary>
-    /// <param name="username">Username to use for logging in</param>
-    /// <param name="password">Password to use for logging in</param>
-    /// <param name="baseUrl"></param>
+    /// <param name="httpClient">
+    ///     The <see cref="HttpClient" /> to use when making requests. Ensure that the HttpClient has
+    ///     <see cref="HttpClientHandler.UseCookies" /> enabled
+    /// </param>
+    /// <param name="username">The username to use when logging in</param>
+    /// <param name="password">The password to use when logging in</param>
+    /// <param name="baseUrl">The url to api.php. Defaults to the Galaxypedia's</param>
+    /// <remarks>
+    ///     If either username or password are omitted, you will not be logged in. Certain functionality will be inoperable
+    ///     until <see cref="LogIn" /> is called manually.
+    /// </remarks>
     /// <exception cref="InvalidOperationException"></exception>
-    public MediaWikiClient(string? username = null, string? password = null,
+    public MediaWikiClient(HttpClient httpClient, string? username = null, string? password = null,
         string baseUrl = "https://galaxypedia.org/api.php")
     {
         _baseUrl = baseUrl;
+        _httpClient = httpClient;
 
-        Client.DefaultRequestHeaders.Add("User-Agent",
-            $"KetchupBot-Updater/{Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "1.0"}");
-
+        // TODO: This should probably be removed. Callers should be responsible for logging in if they need to
         if (username != null && password != null)
             LogIn(username, password).GetAwaiter().GetResult();
     }
@@ -44,9 +43,9 @@ public class MediaWikiClient
     /// <param name="password"></param>
     /// <returns></returns>
     /// <exception cref="InvalidOperationException"></exception>
-    private async Task LogIn(string username, string password)
+    public async Task LogIn(string username, string password)
     {
-        using HttpResponseMessage loginTokenRequest = await Client
+        using HttpResponseMessage loginTokenRequest = await _httpClient
             .GetAsync($"{_baseUrl}?action=query&format=json&meta=tokens&type=login");
 
         loginTokenRequest.EnsureSuccessStatusCode();
@@ -58,7 +57,7 @@ public class MediaWikiClient
 
         if (loginToken == null) throw new InvalidOperationException("Failed to fetch login token");
 
-        using HttpResponseMessage loginRequest = await Client.PostAsync(_baseUrl, new FormUrlEncodedContent(
+        using HttpResponseMessage loginRequest = await _httpClient.PostAsync(_baseUrl, new FormUrlEncodedContent(
             new Dictionary<string, string>
             {
                 { "action", "login" },
@@ -83,7 +82,8 @@ public class MediaWikiClient
     /// <returns></returns>
     public async Task<bool> IsLoggedIn()
     {
-        using HttpResponseMessage response = await Client.GetAsync($"{_baseUrl}?action=query&format=json&assert=user");
+        using HttpResponseMessage response =
+            await _httpClient.GetAsync($"{_baseUrl}?action=query&format=json&assert=user");
 
         response.EnsureSuccessStatusCode();
 
@@ -114,7 +114,7 @@ public class MediaWikiClient
     /// <exception cref="InvalidOperationException"></exception>
     public async Task<Dictionary<string, string>> GetArticles(string[] titles)
     {
-        using HttpResponseMessage response = await Client.GetAsync(
+        using HttpResponseMessage response = await _httpClient.GetAsync(
             $"{_baseUrl}?action=query&format=json&prop=revisions&titles={string.Join("|", titles.Select(HttpUtility.UrlEncode))}&rvslots=*&rvprop=content&formatversion=2");
 
         response.EnsureSuccessStatusCode();
@@ -171,7 +171,7 @@ public class MediaWikiClient
             .ToLower();
 
         using HttpResponseMessage csrfTokenRequest =
-            await Client.GetAsync($"{_baseUrl}?action=query&format=json&meta=tokens");
+            await _httpClient.GetAsync($"{_baseUrl}?action=query&format=json&meta=tokens");
         csrfTokenRequest.EnsureSuccessStatusCode();
         string csrfTokenJson = await csrfTokenRequest.Content.ReadAsStringAsync();
         dynamic? csrfTokenData = JsonConvert.DeserializeObject<dynamic>(csrfTokenJson);
@@ -180,7 +180,7 @@ public class MediaWikiClient
 
         #endregion
 
-        using HttpResponseMessage editRequest = await Client.PostAsync(_baseUrl, new FormUrlEncodedContent(
+        using HttpResponseMessage editRequest = await _httpClient.PostAsync(_baseUrl, new FormUrlEncodedContent(
             new Dictionary<string, string>
             {
                 { "action", "edit" },
@@ -201,6 +201,6 @@ public class MediaWikiClient
                            throw new InvalidOperationException("Failed to deserialize edit response");
 
         if (editData.edit?.result != "Success")
-            throw new InvalidOperationException("Failed to edit article: " + editData?.edit?.result);
+            throw new InvalidOperationException("Failed to edit article: " + editData.edit?.result);
     }
 }

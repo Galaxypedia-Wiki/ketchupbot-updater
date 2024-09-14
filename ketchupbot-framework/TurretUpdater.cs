@@ -62,5 +62,4 @@ public class TurretUpdater(MediaWikiClient mediaWikiClient, ApiManager apiManage
     {
         throw new NotImplementedException();
     }
-
 }

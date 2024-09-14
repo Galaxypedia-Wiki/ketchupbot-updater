@@ -11,7 +11,9 @@ public class MassUpdateJob : IJob
         JobDataMap jobDataMap = context.MergedJobDataMap;
 
         var shipUpdater = (ShipUpdater)jobDataMap["shipUpdater"];
-        string? healthChecksUrl = jobDataMap.TryGetString("healthChecksUrl", out string? healthChecksUrlRaw) ? healthChecksUrlRaw : null;
+        string? healthChecksUrl = jobDataMap.TryGetString("healthChecksUrl", out string? healthChecksUrlRaw)
+            ? healthChecksUrlRaw
+            : null;
         if (shipUpdater == null) throw new InvalidOperationException("ShipUpdater not found in job data map");
 
         if (healthChecksUrl != null) await HealthChecks.BroadcastInProgress(healthChecksUrl);
@@ -27,5 +29,4 @@ public class MassUpdateJob : IJob
         if (context.NextFireTimeUtc != null)
             Console.WriteLine("Next update is scheduled for " + context.NextFireTimeUtc.Value.LocalDateTime);
     }
-
 }

@@ -147,21 +147,14 @@ public static partial class WikiParser
             newDataJObject.Remove(parameter);
 
         // Handle spinals being named differently in the API vs the wiki
-        if (newDataJObject.TryGetValue("spinal_1", out JToken? spinal1))
-        {
-            newDataJObject["(f)_spinal"] = spinal1;
-        }
+        if (newDataJObject.TryGetValue("spinal_1", out JToken? spinal1)) newDataJObject["(f)_spinal"] = spinal1;
 
-        if (newDataJObject.TryGetValue("spinal_2", out JToken? spinal2))
-        {
-            newDataJObject["(g)_spinal"] = spinal2;
-        }
+        if (newDataJObject.TryGetValue("spinal_2", out JToken? spinal2)) newDataJObject["(g)_spinal"] = spinal2;
 
         // Remove all other spinal keys from the new data
-        foreach (JProperty idk in newDataJObject.Properties().ToList().Where(idk => idk.Name.StartsWith("spinal_") && idk.Name != "spinal_dps"))
-        {
+        foreach (JProperty idk in newDataJObject.Properties().ToList()
+                     .Where(idk => idk.Name.StartsWith("spinal_") && idk.Name != "spinal_dps"))
             newDataJObject.Remove(idk.Name);
-        }
 
         // I wonder, should we refactor this function to return null if both inputs are the same? Or should we leave it as is, having the caller manually run CheckIfInfoboxesChanged?
         oldDataJObject.Merge(newDataJObject, new JsonMergeSettings
@@ -175,7 +168,6 @@ public static partial class WikiParser
         var updatedParameters = new List<string>();
 
         foreach (KeyValuePair<string, string> kvp in newData)
-        {
             // If the key is in the parameter exclusions list, skip it. If the key is not in the old data, or the value is different, add it to the updated parameters list
             // If the key is "title", ignore it
             // If the value is "no" and the key is in the list of parameters to not delete if the value is no, skip it
@@ -189,7 +181,6 @@ public static partial class WikiParser
                   (kvp.Value.Equals("yes", StringComparison.OrdinalIgnoreCase) &&
                    GlobalConfiguration.ParametersToDeleteIfValueIsYes.Contains(kvp.Key))))
                 updatedParameters.Add(kvp.Key);
-        }
 
         #endregion
 
@@ -221,7 +212,10 @@ public static partial class WikiParser
     /// </remarks>
     /// <param name="data">The data to sanitize</param>
     /// <param name="oldData">The old data pre-merge. Used for tracking removed parameters</param>
-    /// <returns>A tuple. The first item being the sanitized data. The second being parameters that were removed in sanitization</returns>
+    /// <returns>
+    ///     A tuple. The first item being the sanitized data. The second being parameters that were removed in
+    ///     sanitization
+    /// </returns>
     public static Tuple<Dictionary<string, string>, List<string>> SanitizeData(Dictionary<string, string> data,
         Dictionary<string, string> oldData)
     {
@@ -351,5 +345,4 @@ public static partial class WikiParser
     private static partial Regex GalleryRegex();
 
     #endregion
-
 }

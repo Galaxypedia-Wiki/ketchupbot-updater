@@ -23,7 +23,8 @@ public class ExtractInfoboxTests
     [Fact]
     public void ExtractInfobox_ReturnsFirstInfobox_WhenMultipleInfoboxesExist()
     {
-        const string pageText = "{{Ship Infobox|name=First Ship|type=Destroyer}}{{Ship Infobox|name=Second Ship|type=Cruiser}}";
+        const string pageText =
+            "{{Ship Infobox|name=First Ship|type=Destroyer}}{{Ship Infobox|name=Second Ship|type=Cruiser}}";
 
         string result = ketchupbot_framework.WikiParser.ExtractInfobox(pageText);
 

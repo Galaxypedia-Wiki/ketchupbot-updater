@@ -1,6 +1,6 @@
-﻿services:
+services:
   ketchupbot-updater:
-    image: ketchupbot-updater
+    image: ghcr.io/galaxypedia-wiki/ketchupbot-updater:latest
     restart: unless-stopped
     command: --turrets -ss "0 0 * ? * * *"
     env_file:
@@ -8,4 +8,3 @@
     build:
       context: .
       dockerfile: ketchupbot-updater/Dockerfile
-

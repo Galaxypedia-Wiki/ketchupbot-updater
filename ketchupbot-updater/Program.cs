@@ -1,4 +1,4 @@
-﻿using System.CommandLine;
+using System.CommandLine;
 using System.Net;
 using System.Reflection;
 using ketchupbot_framework;
@@ -226,15 +226,17 @@ public class Program
 
             #endregion
 
+            #region Sentry
 #if !DEBUG
             SentrySdk.Init(options =>
             {
-                options.Dsn = applicationBuilder.Configuration["SENTRY_DSN"];
+                options.Dsn = applicationBuilder.Configuration["SENTRY_DSN"] ?? "";
                 options.AutoSessionTracking = true;
                 options.TracesSampleRate = 1.0;
                 options.ProfilesSampleRate = 1.0;
             });
 #endif
+            #endregion
 
             #region Scheduling Logic
 

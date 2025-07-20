@@ -27,7 +27,7 @@ public class MediaWikiClient
     /// </remarks>
     /// <exception cref="InvalidOperationException"></exception>
     public MediaWikiClient(HttpClient httpClient, string? username = null, string? password = null,
-        string baseUrl = "https://galaxypedia.org/api.php")
+        string baseUrl = "https://wiki.galaxy.casa/w/api.php")
     {
         _baseUrl = baseUrl;
         _httpClient = httpClient;
@@ -201,6 +201,6 @@ public class MediaWikiClient
                            throw new InvalidOperationException("Failed to deserialize edit response");
 
         if (editData.edit?.result != "Success")
-            throw new InvalidOperationException("Failed to edit article: " + editData.edit?.result);
+            throw new InvalidOperationException("Failed to edit article: " + editData);
     }
 }

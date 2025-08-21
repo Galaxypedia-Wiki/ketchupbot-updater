@@ -29,7 +29,7 @@ If you want to run KetchupBot from source, you can do so by following the develo
 ### Usage
 KetchupBot is primarily controlled via CLI arguments. *For any release, you must set up secrets.* Read *Setting Up Secrets* below to figure out how to do this. It's recommended to run --help to figure out what you can do with it.
 
-## Scheduling
+#### Scheduling
 KetchupBot can run as a daemon (using the built in job scheduler) or as a one-shot application. The typical recommendation is that whereever possible, run KetchupBot as a one-shot application and schedule its runs via an external task scheduler such as Crontab. This ensures that KetchupBot isn't using up RAM while idling. Also, in the unlikely case where a memory leak occurs within the application, running it in one-shot ensures that the leak doesn't go out of control.
 
 Use daemon mode only if your use case requires it. Otherwise its best that you use an external scheduler to avoid wasted resources.

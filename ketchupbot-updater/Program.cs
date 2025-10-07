@@ -3,15 +3,12 @@ using System.Net;
 using System.Reflection;
 using ketchupbot_framework;
 using ketchupbot_framework.API;
-using ketchupbot_updater.Jobs;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Polly;
 using Polly.Extensions.Http;
-using Quartz;
-using Quartz.Impl;
 using Serilog;
 using Serilog.Core;
 using Serilog.Events;
@@ -31,9 +28,9 @@ public class Program
         #region Options
 
         var shipsOption = new Option<string[]>(
-            ["--ships", "-s"],
+            ["--ships", "--ship", "-s"],
             () => ["all"],
-            """List of ships to update. "all" to update all ships, "none" to not update ships. Must be "all" in order to use the scheduler"""
+            """List of ships to update. "all" to update all ships, "none" to not update ships."""
         )
         {
             AllowMultipleArgumentsPerToken = true
@@ -42,16 +39,6 @@ public class Program
         var turretsOption = new Option<bool>(
             ["-t", "--turrets"],
             "Update turrets?"
-        );
-
-        var shipScheduleOption = new Option<string>(
-            ["-ss", "--ship-schedule"],
-            "Pass a schedule (in cron format specialized for quartz) to enable the ship scheduler. Use https://www.freeformatter.com/cron-expression-generator-quartz.html to generate a cron expression. Can pass Will ignore --ships option. This takes precedence over the environment variable"
-        );
-
-        var turretScheduleOption = new Option<string>(
-            ["-ts", "--turret-schedule"],
-            "Pass to enable the turret scheduler. Will ignore the --turrets option. This takes precedence over the environment variable"
         );
 
         var dryRunOption = new Option<bool>(
@@ -81,8 +68,6 @@ public class Program
         {
             shipsOption,
             turretsOption,
-            shipScheduleOption,
-            turretScheduleOption,
             dryRunOption,
             threadCountOption,
             secretsDirectoryOption,
@@ -117,8 +102,6 @@ public class Program
                 $"\nketchupbot-updater | v{Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "Development"} | {DateTime.Now}\n");
 
             HostApplicationBuilder applicationBuilder = Host.CreateApplicationBuilder(args);
-            applicationBuilder.Services.AddQuartz();
-            applicationBuilder.Services.AddQuartzHostedService();
             applicationBuilder.Services.AddSerilog();
             applicationBuilder.Services.AddMemoryCache();
             applicationBuilder.Configuration
@@ -238,77 +221,10 @@ public class Program
 #endif
             #endregion
 
-            #region Scheduling Logic
-
-            // TODO: Probably should refactor this logic. We kinda repeat ourselves here. It'd be better to move the job
-            // creation logic outside of the if statements, and instead use the if statements for defining triggers. For
-            // example, if the user doesn't specify a cron schedule, we can still use the Job to run the methods via
-            // StartNow. Like a fire & forget. So we should probably remove the logic at the end of this method that
-            // runs the one-off logic, and instead use the jobs for one-off logic. Though, this might not be possible
-            // for running for individual ships.
-
-            string? shipScheduleOptionValue = handler.ParseResult.GetValueForOption(shipScheduleOption);
-            string? turretScheduleOptionValue = handler.ParseResult.GetValueForOption(turretScheduleOption);
-
-            if (shipScheduleOptionValue != null || turretScheduleOptionValue != null)
-            {
-                IScheduler scheduler = await new StdSchedulerFactory().GetScheduler();
-                await scheduler.Start();
-
-                if (shipScheduleOptionValue != null)
-                {
-                    IJobDetail massUpdateJob = JobBuilder.Create<MassUpdateJob>()
-                        .WithIdentity("massUpdateJob", "group1")
-                        .Build();
-
-                    massUpdateJob.JobDataMap.Put("shipUpdater", app.Services.GetRequiredService<ShipUpdater>());
-                    massUpdateJob.JobDataMap.Put("healthCheckUrl", applicationBuilder.Configuration["HEALTHCHECK_URL"]);
-
-                    ITrigger massUpdateTrigger = TriggerBuilder.Create()
-                        .WithIdentity("massUpdateTrigger", "group1")
-                        .ForJob("massUpdateJob", "group1")
-                        .StartNow()
-                        .WithCronSchedule(shipScheduleOptionValue)
-                        .Build();
-
-                    await scheduler.ScheduleJob(massUpdateJob, massUpdateTrigger);
-                    Console.WriteLine(
-                        $"Scheduled ship mass update job for {massUpdateTrigger.GetNextFireTimeUtc()?.ToLocalTime()}");
-                    Console.WriteLine("Running a mass update job now...");
-                    await scheduler.TriggerJob(new JobKey("massUpdateJob", "group1"));
-                }
-
-                if (turretScheduleOptionValue != null)
-                {
-                    IJobDetail turretUpdateJob = JobBuilder.Create<TurretUpdateJob>()
-                        .WithIdentity("turretUpdateJob", "group1")
-                        .Build();
-
-                    turretUpdateJob.JobDataMap.Put("turretUpdater",
-                        new TurretUpdater(app.Services.GetRequiredService<MediaWikiClient>(),
-                            app.Services.GetRequiredService<ApiManager>()));
-
-                    ITrigger turretUpdateTrigger = TriggerBuilder.Create()
-                        .WithIdentity("turretUpdateTrigger", "group1")
-                        .ForJob("turretUpdateJob", "group1")
-                        .StartNow()
-                        .WithCronSchedule(turretScheduleOptionValue)
-                        .Build();
-
-                    await scheduler.ScheduleJob(turretUpdateJob, turretUpdateTrigger);
-                    Console.WriteLine("Scheduled turret update job");
-                }
-
-                await app.RunAsync();
-            }
-
-            #endregion
-
             #region Ship Option Handler
 
             string[] shipsOptionValue = handler.ParseResult.GetValueForOption(shipsOption)!;
-            if (!shipsOptionValue.First().Equals("none", StringComparison.CurrentCultureIgnoreCase) &&
-                shipScheduleOptionValue == null)
+            if (!shipsOptionValue.First().Equals("none", StringComparison.CurrentCultureIgnoreCase))
             {
                 if (shipsOptionValue.First().Equals("all", StringComparison.CurrentCultureIgnoreCase))
                     await app.Services.GetRequiredService<ShipUpdater>().UpdateAllShips();
@@ -320,7 +236,7 @@ public class Program
 
             #region Turret Option Handler
 
-            if (turrets && turretScheduleOptionValue == null)
+            if (turrets)
                 await app.Services.GetRequiredService<TurretUpdater>().UpdateTurrets();
 
             #endregion

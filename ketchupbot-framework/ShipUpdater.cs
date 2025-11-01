@@ -190,9 +190,30 @@ public partial class ShipUpdater(MediaWikiClient bot, ApiManager apiManager, boo
 
         #endregion
 
+        #region Infobox Wrapping
+
+        Dictionary<string, string> finalData = sanitizedData.Item1;
+
+        if (finalData.TryGetValue("large_turrets", out string? largeTurretsValue))
+        {
+            finalData["large_turrets"] = WrapTurretParameter(largeTurretsValue);
+        }
+
+        if (finalData.TryGetValue("med_turrets", out string? medTurretsValue))
+        {
+            finalData["med_turrets"] = WrapTurretParameter(medTurretsValue);
+        }
+
+        if (finalData.TryGetValue("small_turrets", out string? smallTurretsValue))
+        {
+            finalData["small_turrets"] = WrapTurretParameter(smallTurretsValue);
+        }
+
+        #endregion
+
         #region Diffing logic
 
-        if (!WikiParser.CheckIfInfoboxesChanged(sanitizedData.Item1, parsedInfobox))
+        if (!WikiParser.CheckIfInfoboxesChanged(finalData, parsedInfobox))
             throw new ShipAlreadyUpdatedException("No changes detected");
 
         // The below logic is only for debugging/development instances to see what changes are being made to the infobox. It is not necessary for the bot to function, so it should not be in production.
@@ -214,7 +235,7 @@ public partial class ShipUpdater(MediaWikiClient bot, ApiManager apiManager, boo
         var wikitextConstructionStart = Stopwatch.StartNew();
 #endif
 
-        string newWikitext = WikiParser.ReplaceInfobox(shipArticle, WikiParser.ObjectToWikitext(sanitizedData.Item1));
+        string newWikitext = WikiParser.ReplaceInfobox(shipArticle, WikiParser.ObjectToWikitext(finalData));
 
 #if DEBUG
         wikitextConstructionStart.Stop();
@@ -241,13 +262,38 @@ public partial class ShipUpdater(MediaWikiClient bot, ApiManager apiManager, boo
 
         if (!dryRun)
             await bot.EditArticle(ship, newWikitext, editSummary.ToString());
-
+        
 #if DEBUG
         articleEditStart.Stop();
         Log.Debug("{Identifier} Edited page in {1}ms", GetShipIdentifier(ship), articleEditStart.ElapsedMilliseconds);
 #endif
 
         #endregion
+    }
+
+    private static string WrapTurret(string turretEntry)
+    {
+        // Regex to split the quantity (optional) and the full turret name
+        var match = Regex.Match(turretEntry, @"^\s*(\d+\s+)?(.+)\s*$");
+        if (!match.Success)
+        {
+            return turretEntry;
+        }
+
+        string fullTurretName = match.Groups[2].Value.Trim();
+        
+        string wrappedTooltipContent = turretEntry.Trim(); 
+        
+        return $"{{{{Tooltip|{wrappedTooltipContent}|{{{{TurretInfobox|{fullTurretName}}}}}}}}}";
+    }
+
+    private static string WrapTurretParameter(string parameterValue)
+    {
+        string[] entries = parameterValue.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+
+        string[] wrappedEntries = entries.Select(WrapTurret).ToArray();
+
+        return string.Join("\n\n", wrappedEntries);
     }
 
     /// <summary>

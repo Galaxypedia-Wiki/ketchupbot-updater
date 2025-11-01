@@ -72,7 +72,7 @@ public class ApiManager(string galaxyInfoApi, HttpClient httpClient, IMemoryCach
     /// <returns>A dictionary with the turret data</returns>
     public async Task<Dictionary<string, TurretData>?> GetTurretData()
     {
-        HttpResponseMessage response = await httpClient.GetAsync($"{galaxyInfoApi.Trim()}/api/v2/ships-turret/raw");
+        HttpResponseMessage response = await httpClient.GetAsync($"{galaxyInfoApi.Trim()}/api/v2/ships-turrets/raw");
 
         response.EnsureSuccessStatusCode();
 
@@ -82,6 +82,6 @@ public class ApiManager(string galaxyInfoApi, HttpClient httpClient, IMemoryCach
 
         dynamic? jsonResponse = JsonConvert.DeserializeObject<dynamic>(stringResponse);
 
-        return JsonConvert.DeserializeObject<Dictionary<string, TurretData>>(jsonResponse?.serializedTurrets);
+        return JsonConvert.DeserializeObject<Dictionary<string, TurretData>>(jsonResponse?.serializedTurrets.ToString());
     }
 }

@@ -192,23 +192,14 @@ public partial class ShipUpdater(MediaWikiClient bot, ApiManager apiManager, boo
 
         #region Infobox Wrapping
 
-        Dictionary<string, string> finalData = sanitizedData.Item1;
+        var finalData = sanitizedData.Item1;
+        string[] turretKeys = ["huge_turrets", "large_turrets", "med_turrets", "small_turrets"];
 
-        if (finalData.TryGetValue("large_turrets", out string? largeTurretsValue))
+        foreach (var key in turretKeys)
         {
-            finalData["large_turrets"] = WrapTurretParameter(largeTurretsValue);
+            if (finalData.TryGetValue(key, out var turretValue))
+                finalData[key] = WrapTurretParameter(turretValue);
         }
-
-        if (finalData.TryGetValue("med_turrets", out string? medTurretsValue))
-        {
-            finalData["med_turrets"] = WrapTurretParameter(medTurretsValue);
-        }
-
-        if (finalData.TryGetValue("small_turrets", out string? smallTurretsValue))
-        {
-            finalData["small_turrets"] = WrapTurretParameter(smallTurretsValue);
-        }
-
         #endregion
 
         #region Diffing logic
@@ -262,7 +253,7 @@ public partial class ShipUpdater(MediaWikiClient bot, ApiManager apiManager, boo
 
         if (!dryRun)
             await bot.EditArticle(ship, newWikitext, editSummary.ToString());
-        
+
 #if DEBUG
         articleEditStart.Stop();
         Log.Debug("{Identifier} Edited page in {1}ms", GetShipIdentifier(ship), articleEditStart.ElapsedMilliseconds);
@@ -273,18 +264,19 @@ public partial class ShipUpdater(MediaWikiClient bot, ApiManager apiManager, boo
 
     private static string WrapTurret(string turretEntry)
     {
+        var trimmedEntry = turretEntry.Trim();
+        // If the entry is already a template, don't wrap it again.
+        if (trimmedEntry.StartsWith("{{") && trimmedEntry.EndsWith("}}"))
+            return trimmedEntry;
+
         // Regex to split the quantity (optional) and the full turret name
-        var match = Regex.Match(turretEntry, @"^\s*(\d+\s+)?(.+)\s*$");
+        var match = Regex.Match(trimmedEntry, @"^(\d+\s+)?(.+)$");
         if (!match.Success)
-        {
-            return turretEntry;
-        }
+            return trimmedEntry;
 
         string fullTurretName = match.Groups[2].Value.Trim();
-        
-        string wrappedTooltipContent = turretEntry.Trim(); 
-        
-        return $"{{{{Tooltip|{wrappedTooltipContent}|{{{{TurretInfobox|{fullTurretName}}}}}}}}}";
+
+        return $"{{{{Tooltip|{trimmedEntry}|{{{{TurretInfobox|{fullTurretName}}}}}}}}}";
     }
 
     private static string WrapTurretParameter(string parameterValue)

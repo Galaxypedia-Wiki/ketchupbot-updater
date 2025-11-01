@@ -331,7 +331,7 @@ public static partial class WikiParser
     #region Regexes
 
     [GeneratedRegex(
-        @"{{\s*Ship[ _]Infobox(?:[^{}]|{{[^{}]*}}|{{{[^{}]*}}})+(?:(?!{{(?:[^{}]|{{[^{}]*}}|{{{[^{}]*}}})*)}})",
+        @"{{\s*Ship[ _]Infobox((?:(?>[^{}]*)|\{\{(?:(?>[^{}]*)|\{\{(?>[^{}]*)\}\})*\}})*)}}",
         RegexOptions.Singleline | RegexOptions.IgnoreCase)]
     private static partial Regex SHIP_INFOBOX_REGEX();
 

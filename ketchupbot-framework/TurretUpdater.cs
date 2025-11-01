@@ -71,38 +71,18 @@ public class TurretUpdater(MediaWikiClient mediaWikiClient, ApiManager apiManage
         {
             TurretData turret = kvp.Value;
 
-            string name = turret.Name ?? "How?";
-            string size = turret.Size ?? "Unknown";
-            string Class = turret.Class ?? "Unknown";
-            string turretSize = turret.TurretSize ?? "Unknown";
-
-            double dps = turret.Dps ?? 0.0;
-            double mass = turret.Mass ?? 0.0;
-            double range = turret.Range ?? 0.0;
-            double damage = turret.Damage ?? 0.0;
-            double reload = turret.Reload ?? 0.0;
-            double beamSize = turret.BeamSize ?? 0.0;
-            bool overrideValue = turret.Override ?? false;
-
-            int maxCycle = turret.MaxCycle ?? 0;
-            int numBarrels = turret.NumBarrels ?? 0;
-
-            double baseAccuracy = turret.BaseAccuracy ?? 0.0;
-            double accuracyIndex = turret.AccuracyIndex ?? 0.0;
-            double rampingStrength = turret.RampingStrength ?? 0.0;
-            double speedDenominator = turret.SpeedDenominator ?? 0.0;
-
-            string cargoStore = $"{{{{#cargo_store:_table=TurretData|name={name}|size={size}|class={Class}|turretsize={turretSize}|dps={dps:G5}|mass={mass:G5}|distance={range:G5}|damage={damage:G5}|reload={reload:G5}|beamsize={beamSize:G5}|override={overrideValue}|maxcycle={maxCycle}|numbarrels={numBarrels}|baseaccuracy={baseAccuracy:G5}|accuracyindex={accuracyIndex:G5}|rampingstrength={rampingStrength:G5}|speeddenominator={speedDenominator:G5}}}}}";
+            string cargoStore =
+                $"{{{{#cargo_store:_table=TurretData|name={turret.Name ?? "N/A"}|size={turret.Size ?? "N/A"}|class={turret.Class ?? "N/A"}|turretsize={turret.TurretSize ?? "N/A"}|dps={turret.Dps:G5}|mass={turret.Mass:G5}|distance={turret.Range:G5}|damage={turret.Damage:G5}|reload={turret.Reload:G5}|beamsize={turret.BeamSize:G5}|override={turret.Override}|maxcycle={turret.MaxCycle}|numbarrels={turret.NumBarrels}|baseaccuracy={turret.BaseAccuracy:G5}|accuracyindex={turret.AccuracyIndex:G5}|rampingstrength={turret.RampingStrength:G5}|speeddenominator={turret.SpeedDenominator:G5}}}}}";
 
             cargoBuilder.Append(cargoStore);
         }
 
         string newTurretDataWikitext = cargoBuilder.ToString();
         string TurretDataWikitext = await mediaWikiClient.GetArticle("Template:TurretData");
-        
+
         if (newTurretDataWikitext == TurretDataWikitext)
             throw new Exception("Turretdata is up to date");
-        await mediaWikiClient.EditArticle("Template:TurretData", newTurretDataWikitext, "Updating turretdata");
+       await mediaWikiClient.EditArticle("Template:TurretData", newTurretDataWikitext, "Updating turretdata");
     }
 
     // TODO: Maybe in the future provide a way to update a single turret. This isn't really needed right now, so I'm not

@@ -57,7 +57,7 @@ public class TurretUpdater(MediaWikiClient mediaWikiClient, ApiManager apiManage
         if (newTurretPageWikitext == turretPageWikitext)
             throw new Exception("Turrets page is up to date");
 
-        // await mediaWikiClient.EditArticle("Turrets", newTurretPageWikitext, "Updating turrets");
+        await mediaWikiClient.EditArticle("Turrets", newTurretPageWikitext, "Updating turrets");
     }
 
     public async Task UpdateTurretCargoData(Dictionary<string, TurretData> turretData)

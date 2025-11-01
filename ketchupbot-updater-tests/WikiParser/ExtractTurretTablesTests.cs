@@ -24,9 +24,9 @@ public class ExtractTurretTablesTests
     }
 
     [Fact]
-    public void ExtractsTurretTables_ThrowsInvalidOperationException_WhenMoreThanSixTurretTablesFound()
+    public void ExtractsTurretTables_ThrowsInvalidOperationException_WhenMoreThanSevenTurretTablesFound()
     {
-        string text = string.Concat(Enumerable.Repeat("{| class=\"wikitable sortable\" ... |}", 7));
+        string text = string.Concat(Enumerable.Repeat("{| class=\"wikitable sortable\" ... |}", 8));
 
         Assert.Throws<InvalidOperationException>(() => ketchupbot_framework.WikiParser.ExtractTurretTables(text));
     }

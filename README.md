@@ -8,7 +8,7 @@ This is the updater component of the KetchupBot Project. This component facilita
 
 KetchupBot automatically publishes a docker image on every push which you can use to run a reproducible build of KetchupBot. You can find the image [here](https://github.com/smallketchup82/ketchupbot-updater/pkgs/container/ketchupbot-updater).
 
-We recommend this method the most for Continuous Integration, as it's the most reliable and reproducible. It's also the easiest way to run KetchupBot, as you don't have to worry about dependencies or setting up a runtime.
+We recommend this method the most for Continuous Integration, as it's the most reliable and reproducible. It's also the easiest way to run KetchupBot, as you don't have to worry about dependencies or setting up a runtime. However, it does use up quite a lot of storage.
 
 ### Running via Binary
 We provide prebuilt binaries for running ketchupbot. Everything is contained within the binary, including the runtime, dependencies, and any assets. These binaries also assume a production environment, so they will not print debug information.
@@ -16,9 +16,7 @@ We provide prebuilt binaries for running ketchupbot. Everything is contained wit
 These are mainly distributed for ease of use, but we don't really recommend using them. As they're not as flexible as running from source, nor as reproducible as running with Docker. Use this method if you  don't want to deal with dependencies or working with docker.
 
 #### Development Builds
-We recommend using these builds when going with prebuilt binaries. They're built on every change and will have all the latest features and bug fixes. You can find the latest development build [here]().
-
-Make sure to check back often for new builds, as they can be rather frequent.
+We recommend using these builds when going with prebuilt binaries. They're built on every change and will have all the latest features and bug fixes. You can find the latest development build [here](). Make sure to check back often for new builds, as they can be rather frequent.
 
 #### Stable Release
 You can download the latest stable release from the [releases page](). These are built on every release and are considered stable for production use. However, releases are made infrequently, so they may not have the latest features and bug fixes. We typically use releases more as a checkpoint for the project, rather than a new version. So you should only use these if you want a stable version of KetchupBot and don't want to deal with the hassle of updating it frequently.
@@ -30,9 +28,7 @@ If you want to run KetchupBot from source, you can do so by following the develo
 KetchupBot is primarily controlled via CLI arguments. *For any release, you must set up secrets.* Read *Setting Up Secrets* below to figure out how to do this. It's recommended to run --help to figure out what you can do with it.
 
 #### Scheduling
-KetchupBot can run as a daemon (using the built in job scheduler) or as a one-shot application. The typical recommendation is that whereever possible, run KetchupBot as a one-shot application and schedule its runs via an external task scheduler such as Crontab. This ensures that KetchupBot isn't using up RAM while idling. Also, in the unlikely case where a memory leak occurs within the application, running it in one-shot ensures that the leak doesn't go out of control.
-
-Use daemon mode only if your use case requires it. Otherwise its best that you use an external scheduler to avoid wasted resources.
+Since https://github.com/Galaxypedia-Wiki/ketchupbot-updater/pull/165, KetchupBot no longer includes a daemon mode (built in job scheduler). We recommend that you run KetchupBot as a one-shot application and schedule its runs via an external task scheduler such as [cron](https://en.wikipedia.org/wiki/Cron) or [Windows Task Scheduler](https://en.wikipedia.org/wiki/Windows_Task_Scheduler). This ensures that KetchupBot isn't using up RAM while idling. And, in the unlikely case where a memory leak occurs within the application, running it as one-shot ensures that the leak doesn't go out of control.
 
 ## Developing
 KetchupBot is very easy to get up and running. The below steps will walk you through setting up a development environment.

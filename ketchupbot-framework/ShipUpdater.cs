@@ -191,13 +191,12 @@ public partial class ShipUpdater(MediaWikiClient bot, ApiManager apiManager, boo
 
         #region Infobox Wrapping
 
-        var finalData = sanitizedData.Item1;
         string[] turretKeys = ["huge_turrets", "large_turrets", "med_turrets", "small_turrets"];
 
         foreach (var key in turretKeys)
         {
-            if (finalData.TryGetValue(key, out var turretValue))
-                finalData[key] = WrapTurretParameter(turretValue);
+            if (sanitizedData.finalData.TryGetValue(key, out var turretValue))
+                sanitizedData.finalData[key] = WrapTurretParameter(turretValue);
         }
         #endregion
 

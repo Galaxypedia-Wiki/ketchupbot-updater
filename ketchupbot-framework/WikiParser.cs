@@ -136,7 +136,7 @@ public static partial class WikiParser
     ///     were updated.
     /// </returns>
     /// <exception cref="Exception"></exception>
-    public static Tuple<Dictionary<string, string>, List<string>> MergeData(Dictionary<string, string> newData,
+    public static (Dictionary<string, string> sortedData, List<string> updatedParameters) MergeData(Dictionary<string, string> newData,
         Dictionary<string, string> oldData)
     {
         JObject newDataJObject = JObject.FromObject(newData);
@@ -191,7 +191,7 @@ public static partial class WikiParser
         Dictionary<string, string> sortedData =
             mergedData.OrderBy(kvp => kvp.Key).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 
-        return new Tuple<Dictionary<string, string>, List<string>>(sortedData, updatedParameters);
+        return (sortedData, updatedParameters);
     }
 
     /// <summary>
@@ -216,7 +216,7 @@ public static partial class WikiParser
     ///     A tuple. The first item being the sanitized data. The second being parameters that were removed in
     ///     sanitization
     /// </returns>
-    public static Tuple<Dictionary<string, string>, List<string>> SanitizeData(Dictionary<string, string> data,
+    public static (Dictionary<string, string> sanitizedData, List<string> removedParameters) SanitizeData(Dictionary<string, string> data,
         Dictionary<string, string> oldData)
     {
         var sanitizedData = new Dictionary<string, string>();
@@ -261,7 +261,7 @@ public static partial class WikiParser
             sanitizedData[key] = value;
         }
 
-        return new Tuple<Dictionary<string, string>, List<string>>(sanitizedData, removedParameters);
+        return (sanitizedData, removedParameters);
     }
 
     /// <summary>

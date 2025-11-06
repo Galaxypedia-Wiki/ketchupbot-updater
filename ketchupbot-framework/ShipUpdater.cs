@@ -163,7 +163,7 @@ public partial class ShipUpdater(MediaWikiClient bot, ApiManager apiManager, boo
         var mergeDataStart = Stopwatch.StartNew();
 #endif
 
-        Tuple<Dictionary<string, string>, List<string>> mergedData = WikiParser.MergeData(
+        (Dictionary<string, string> sortedData, List<string> updatedParameters) mergedData = WikiParser.MergeData(
             data ?? throw new InvalidOperationException("Supplied data is null after deserialization"), parsedInfobox);
 
 #if DEBUG
@@ -179,8 +179,7 @@ public partial class ShipUpdater(MediaWikiClient bot, ApiManager apiManager, boo
         var sanitizeDataStart = Stopwatch.StartNew();
 #endif
 
-        Tuple<Dictionary<string, string>, List<string>> sanitizedData =
-            WikiParser.SanitizeData(mergedData.Item1, parsedInfobox);
+        (Dictionary<string, string> finalData, List<string> updatedParameters) sanitizedData = WikiParser.SanitizeData(mergedData.sortedData, parsedInfobox);
 
 #if DEBUG
         sanitizeDataStart.Stop();
@@ -192,7 +191,7 @@ public partial class ShipUpdater(MediaWikiClient bot, ApiManager apiManager, boo
 
         #region Diffing logic
 
-        if (!WikiParser.CheckIfInfoboxesChanged(sanitizedData.Item1, parsedInfobox))
+        if (!WikiParser.CheckIfInfoboxesChanged(sanitizedData.finalData, parsedInfobox))
             throw new ShipAlreadyUpdatedException("No changes detected");
 
         // The below logic is only for debugging/development instances to see what changes are being made to the infobox. It is not necessary for the bot to function, so it should not be in production.
@@ -214,7 +213,7 @@ public partial class ShipUpdater(MediaWikiClient bot, ApiManager apiManager, boo
         var wikitextConstructionStart = Stopwatch.StartNew();
 #endif
 
-        string newWikitext = WikiParser.ReplaceInfobox(shipArticle, WikiParser.ObjectToWikitext(sanitizedData.Item1));
+        string newWikitext = WikiParser.ReplaceInfobox(shipArticle, WikiParser.ObjectToWikitext(sanitizedData.finalData));
 
 #if DEBUG
         wikitextConstructionStart.Stop();
@@ -233,11 +232,11 @@ public partial class ShipUpdater(MediaWikiClient bot, ApiManager apiManager, boo
         var editSummary = new StringBuilder();
         editSummary.AppendLine("Automated ship data update.");
 
-        if (mergedData.Item2.Count > 0)
-            editSummary.AppendLine("Updated parameters: " + string.Join(", ", mergedData.Item2));
+        if (mergedData.updatedParameters.Count > 0)
+            editSummary.AppendLine("Updated parameters: " + string.Join(", ", mergedData.updatedParameters));
 
-        if (sanitizedData.Item2.Count > 0)
-            editSummary.AppendLine("Removed parameters: " + string.Join(", ", sanitizedData.Item2));
+        if (sanitizedData.updatedParameters.Count > 0)
+            editSummary.AppendLine("Removed parameters: " + string.Join(", ", sanitizedData.updatedParameters));
 
         if (!dryRun)
             await bot.EditArticle(ship, newWikitext, editSummary.ToString());

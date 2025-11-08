@@ -2,7 +2,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 namespace ketchupbot_framework.Types;
 
-[Newtonsoft.Json.JsonConverter(typeof(StringEnumConverter))]
+[JsonConverter(typeof(StringEnumConverter))]
 public enum TurretTypeEnum
 {
     Mining,

@@ -256,6 +256,25 @@ public static partial class WikiParser
                     // Get rid of newlines in the description parameter
                     value = value.Replace("\n", " ");
                     break;
+                case "tiny_turrets":
+                case "small_turrets":
+                case "med_turrets":
+                case "large_turrets":
+                case "huge_turrets":
+                    // Convert turrets to tooltips
+                    var values = Regex.Split(value, @"\r?\n+");
+                    var formatted = values
+                        .Select(val => val.Trim())
+                        .Where(val => !string.IsNullOrEmpty(val))
+                        .Select(val =>
+                        {
+                            if (Regex.IsMatch(val, @"^\{\{Tooltip\|[^|]+\|\{\{TurretInfbox\|[^}]+\}\}\}\}$"))
+                                return val;
+                            else
+                            return $"{{{{Tooltip|{val}|{{{{TurretInfobox|{val}}}}}}}}}";
+                        });
+                    value = string.Join("\n\n", formatted);
+                    break;
             }
 
             sanitizedData[key] = value;

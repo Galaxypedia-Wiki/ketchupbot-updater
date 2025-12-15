@@ -1,6 +1,7 @@
 using System.CommandLine;
 using System.Net;
 using System.Reflection;
+using DotNetEnv;
 using ketchupbot_framework;
 using ketchupbot_framework.API;
 using Microsoft.Extensions.Caching.Memory;
@@ -100,6 +101,8 @@ public class Program
 
             Console.WriteLine(
                 $"\nketchupbot-updater | v{Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "Development"} | {DateTime.Now}\n");
+
+            Env.Load();
 
             HostApplicationBuilder applicationBuilder = Host.CreateApplicationBuilder(args);
             applicationBuilder.Services.AddSerilog();

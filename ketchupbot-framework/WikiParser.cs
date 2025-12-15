@@ -322,8 +322,8 @@ public static partial class WikiParser
         return turretTables.Count switch
         {
             0 => throw new InvalidOperationException("No turret tables found."),
-            > 6 => throw new InvalidOperationException(
-                "Irregular number of turret tables found. Please ensure that the number of tables stays at 6 or below."),
+            > 7 => throw new InvalidOperationException(
+                "Irregular number of turret tables found. Please ensure that the number of tables stays at 7 or below."),
             _ => turretTables
         };
     }
@@ -331,7 +331,7 @@ public static partial class WikiParser
     #region Regexes
 
     [GeneratedRegex(
-        @"{{\s*Ship[ _]Infobox(?:[^{}]|{{[^{}]*}}|{{{[^{}]*}}})+(?:(?!{{(?:[^{}]|{{[^{}]*}}|{{{[^{}]*}}})*)}})",
+        @"{{\s*Ship[ _]Infobox((?:(?>[^{}]*)|\{\{(?:(?>[^{}]*)|\{\{(?>[^{}]*)\}\})*\}})*)}}",
         RegexOptions.Singleline | RegexOptions.IgnoreCase)]
     private static partial Regex SHIP_INFOBOX_REGEX();
 

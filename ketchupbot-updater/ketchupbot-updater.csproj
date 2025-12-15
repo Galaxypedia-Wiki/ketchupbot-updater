@@ -12,6 +12,8 @@
         <AssemblyVersion>5.0.1.0</AssemblyVersion>
         <FileVersion>5.0.1.0</FileVersion>
         <Version>5.0.1</Version>
+        <PublishSingleFile>true</PublishSingleFile>
+        <SelfContained>true</SelfContained>
         <Description>KetchupBot-Updater: The Premier Galaxypedia Updater
 
             This project is a standalone application that builds upon ketchupbot-framework to provide an intuitive interface to ketchupbot-updater

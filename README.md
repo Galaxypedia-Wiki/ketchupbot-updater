@@ -1,5 +1,5 @@
 # KetchupBot-Updater
-This is the updater component of the KetchupBot Project. This component facilitates grabbing data from the Galaxy Info API and using that data to update the [Galaxypedia](https://robloxgalaxy.wiki).
+This is the updater component of the KetchupBot Project. This component facilitates grabbing data from the Galaxy Info API and using that data to update the [Galaxypedia](https://wiki.galaxy.casa).
 
 ## Downloading, Running, and Usage
 

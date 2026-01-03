@@ -86,4 +86,4 @@ We don't have GitHub discussions turned on, as we would prefer any discussion re
 As always, we highly encourage you to [reach out to Galaxypedia Staff](https://discord.gg/hsr4Dq6Ha6) if you have any questions or need any help with this; we don't mind, seriously.
 
 ## Notices & Terms
-This software is Open Source and licensed under the MIT license. You must follow the rules in the license when contributing, modifying, using, and/or redistributing the software. In addition to the license, you must follow the Galaxypedia's [Terms of Service](https://robloxgalaxy.wiki/wiki/Galaxypedia:Terms_of_Service#4._Rules,_Policies,_Guidelines).
+This software is Open Source and licensed under the MIT license. You must follow the rules in the license when contributing, modifying, using, and/or redistributing the software. In addition to the license, you must follow the Galaxypedia's [Terms of Service](https://wiki.galaxy.casa/wiki/Project:Terms_of_Service).

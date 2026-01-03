@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using System.Text;
 using ketchupbot_framework.API;
 using ketchupbot_framework.Types;
 
@@ -32,6 +33,7 @@ public class TurretUpdater(MediaWikiClient mediaWikiClient, ApiManager apiManage
                     3 => data.TurretType == TurretTypeEnum.Flak,
                     4 => data.TurretType == TurretTypeEnum.Cannon,
                     5 => data.TurretType == TurretTypeEnum.Pdl,
+                    6 => data.TurretType == TurretTypeEnum.Beam,
                     _ => false
                 };
             });
@@ -47,13 +49,40 @@ public class TurretUpdater(MediaWikiClient mediaWikiClient, ApiManager apiManage
             // This is a lot less hard coded, but a hell to read. I'll leave it like this for now.
             string newTable = $"{tableSplit[0].Trim()}\n|-\n{string.Join("\n|-", turretsParsed).Trim()}\n|}}";
 
-            newTurretPageWikitext = Regex.Replace(turretPageWikitext, value.Value, newTable);
+            newTurretPageWikitext = Regex.Replace(newTurretPageWikitext, Regex.Escape(value.Value), newTable);
         }
+
+        await UpdateTurretCargoData(turretData);
 
         if (newTurretPageWikitext == turretPageWikitext)
             throw new Exception("Turrets page is up to date");
 
         await mediaWikiClient.EditArticle("Turrets", newTurretPageWikitext, "Updating turrets");
+    }
+
+    public async Task UpdateTurretCargoData(Dictionary<string, TurretData> turretData)
+    {
+        StringBuilder cargoBuilder = new StringBuilder();
+
+        // Including the table declaration on the page currently causes an issue where miraheze never populates the cargo table.
+        // cargoBuilder.Append("{{#cargo_declare:_table=TurretData|name=String|size=String|class=String|turretsize=String|dps=Float|mass=Float|distance=Float|damage=Float|reload=Float|beamsize=Float|override=Boolean|maxcycle=Integer|numbarrels=Integer|baseaccuracy=Float|accuracyindex=Float|rampingstrength=Float|speeddenominator=Float}}");
+
+        foreach (var kvp in turretData)
+        {
+            TurretData turret = kvp.Value;
+
+            string cargoStore =
+                $"{{{{#cargo_store:_table=TurretData|name={turret.Name ?? "N/A"}|size={turret.Size ?? "N/A"}|class={turret.Class ?? "N/A"}|turretsize={turret.TurretSize ?? "N/A"}|dps={turret.Dps:G5}|mass={turret.Mass:G5}|distance={turret.Range:G5}|damage={turret.Damage:G5}|reload={turret.Reload:G5}|beamsize={turret.BeamSize:G5}|override={turret.Override}|maxcycle={turret.MaxCycle}|numbarrels={turret.NumBarrels}|baseaccuracy={turret.BaseAccuracy:G5}|accuracyindex={turret.AccuracyIndex:G5}|rampingstrength={turret.RampingStrength:G5}|speeddenominator={turret.SpeedDenominator:G5}}}}}";
+
+            cargoBuilder.Append(cargoStore);
+        }
+
+        string newTurretDataWikitext = cargoBuilder.ToString();
+        string TurretDataWikitext = await mediaWikiClient.GetArticle("Template:TurretData");
+
+        if (newTurretDataWikitext == TurretDataWikitext)
+            throw new Exception("Turretdata is up to date");
+       await mediaWikiClient.EditArticle("Template:TurretData", newTurretDataWikitext, "Updating turretdata");
     }
 
     // TODO: Maybe in the future provide a way to update a single turret. This isn't really needed right now, so I'm not

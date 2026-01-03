@@ -82,6 +82,6 @@ public class ApiManager(string galaxyInfoApi, HttpClient httpClient, IMemoryCach
 
         dynamic? jsonResponse = JsonConvert.DeserializeObject<dynamic>(stringResponse);
 
-        return JsonConvert.DeserializeObject<Dictionary<string, TurretData>>(jsonResponse?.serializedTurrets);
+        return JsonConvert.DeserializeObject<Dictionary<string, TurretData>>(jsonResponse?.serializedTurrets.ToString());
     }
 }

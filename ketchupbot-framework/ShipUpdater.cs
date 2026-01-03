@@ -189,6 +189,17 @@ public partial class ShipUpdater(MediaWikiClient bot, ApiManager apiManager, boo
 
         #endregion
 
+        #region Infobox Wrapping
+
+        string[] turretKeys = ["huge_turrets", "large_turrets", "med_turrets", "small_turrets"];
+
+        foreach (var key in turretKeys)
+        {
+            if (sanitizedData.finalData.TryGetValue(key, out var turretValue))
+                sanitizedData.finalData[key] = WrapTurretParameter(turretValue);
+        }
+        #endregion
+
         #region Diffing logic
 
         if (!WikiParser.CheckIfInfoboxesChanged(sanitizedData.finalData, parsedInfobox))
@@ -247,6 +258,32 @@ public partial class ShipUpdater(MediaWikiClient bot, ApiManager apiManager, boo
 #endif
 
         #endregion
+    }
+
+    private static string WrapTurret(string turretEntry)
+    {
+        var trimmedEntry = turretEntry.Trim();
+        // If the entry is already a template, don't wrap it again.
+        if (trimmedEntry.StartsWith("{{") && trimmedEntry.EndsWith("}}"))
+            return trimmedEntry;
+
+        // Regex to split the quantity (optional) and the full turret name
+        var match = Regex.Match(trimmedEntry, @"^(\d+\s+)?(.+)$");
+        if (!match.Success)
+            return trimmedEntry;
+
+        string fullTurretName = match.Groups[2].Value.Trim();
+
+        return $"{{{{Tooltip|{trimmedEntry}|{{{{TurretInfobox|{fullTurretName}}}}}}}}}";
+    }
+
+    private static string WrapTurretParameter(string parameterValue)
+    {
+        string[] entries = parameterValue.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+
+        string[] wrappedEntries = entries.Select(WrapTurret).ToArray();
+
+        return string.Join("\n\n", wrappedEntries);
     }
 
     /// <summary>

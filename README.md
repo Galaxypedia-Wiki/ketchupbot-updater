@@ -6,7 +6,7 @@ This is the updater component of the KetchupBot Project. This component facilita
 ### Running via Docker
 **Do note that the CI Docker image assumes a production environment. Please do not use it for development & debugging! It will not print debug information. Do not use the docker image unless you know what you're doing!**
 
-KetchupBot automatically publishes a docker image on every push which you can use to run a reproducible build of KetchupBot. You can find the image [here](https://github.com/smallketchup82/ketchupbot-updater/pkgs/container/ketchupbot-updater).
+KetchupBot automatically publishes a docker image on every push, which you can use to run a reproducible build of KetchupBot. You can find the image [here](https://github.com/smallketchup82/ketchupbot-updater/pkgs/container/ketchupbot-updater).
 
 We recommend this method the most for Continuous Integration, as it's the most reliable and reproducible. It's also the easiest way to run KetchupBot, as you don't have to worry about dependencies or setting up a runtime. However, it does use up quite a lot of storage.
 
@@ -28,10 +28,10 @@ If you want to run KetchupBot from source, you can do so by following the develo
 KetchupBot is primarily controlled via CLI arguments. *For any release, you must set up secrets.* Read *Setting Up Secrets* below to figure out how to do this. It's recommended to run --help to figure out what you can do with it.
 
 #### Scheduling
-Since https://github.com/Galaxypedia-Wiki/ketchupbot-updater/pull/165, KetchupBot no longer includes a daemon mode (built in job scheduler). We recommend that you run KetchupBot as a one-shot application and schedule its runs via an external task scheduler such as [cron](https://en.wikipedia.org/wiki/Cron) or [Windows Task Scheduler](https://en.wikipedia.org/wiki/Windows_Task_Scheduler). This ensures that KetchupBot isn't using up RAM while idling. And, in the unlikely case where a memory leak occurs within the application, running it as one-shot ensures that the leak doesn't go out of control.
+Since https://github.com/Galaxypedia-Wiki/ketchupbot-updater/pull/165, KetchupBot no longer includes a daemon mode (built-in job scheduler). We recommend that you run KetchupBot as a one-shot application and schedule its runs via an external task scheduler such as [cron](https://en.wikipedia.org/wiki/Cron) or [Windows Task Scheduler](https://en.wikipedia.org/wiki/Windows_Task_Scheduler). This ensures that KetchupBot isn't using up RAM while idling. And, in the unlikely case where a memory leak occurs within the application, running it as one-shot ensures that the leak doesn't go out of control.
 
 ## Developing
-KetchupBot is very easy to get up and running. The below steps will walk you through setting up a development environment.
+KetchupBot is very easy to get up and running. The steps below will walk you through setting up a development environment.
 
 #### Prerequisites:
 - [.NET SDK 8.0](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)
@@ -55,7 +55,7 @@ You can also use a `.env` file or environment variables to store secrets. They f
 Whichever method you choose, you will have to put `appsettings.json` into the same directory as the executable. You can add your appsettings.json to the `ketchupbot-updater` project and set it to `Copy if newer` in the properties. This will automatically copy it to your build directory.
 
 ### Building
-KetchupBot is considered mission critical by the Galaxypedia staff, and for that reason, we use strict coding practices and standards to ensure that the program cannot crash. All of these configurations and practices are advised via eslint. For that reason, we highly recommend using a modern IDE when developing for KetchupBot. I (smallketchup82) personally use Jetbrains WebStorm, but others on the development team use VSCode with the eslint extension. If you are using VSCode, go into your settings and make sure that the "experimental flag config" setting is on for the eslint extension, otherwise it won't be able to use our rules.
+KetchupBot is considered mission critical by the Galaxypedia staff, and for that reason, we use strict coding practices and standards to ensure that the program cannot crash. All of these configurations and practices are advised via ESLint. For that reason, we highly recommend using a modern IDE when developing for KetchupBot. I (smallketchup82) personally use Jetbrains WebStorm, but others on the development team use VSCode with the ESLint extension. If you are using VSCode, go into your settings and make sure that the "experimental flag config" setting is on for the ESLint extension, otherwise it won't be able to use our rules.
 
 We recommend reading the package.json to find some useful npm scripts. We have npm scripts to run via JIT (the developmental way of running), run via a build (to be used in production environments for its reliability), and to build.
 
@@ -73,7 +73,7 @@ dotnet run --project ketchupbot-updater
 ### General notes for development:
 - **NEVER TURN OFF DRY RUN** while working on KetchupBot. This is a mission-critical program, and we don't want to accidentally update the Galaxypedia with incorrect data.
     - Running in Release configuration will automatically turn off dry run. Be careful!
-    - You can manually force dry run by passing `--dry-run` as a CLI argument. This can be useful when working on Release configuration.
+    - You can manually force dry run by passing `--dry-run` as a CLI argument. This can be useful when working on the release configuration.
 - When profiling, add the `-c Release` flag to the `dotnet run` command to enable optimizations.
 - Please format your code before committing. Use your IDE's formatter tools to do this, or run `dotnet format` from the command line.
 - In general, the code is the documentation, so we'd recommend looking through the codebase to get a feel for how things work. We make an effort to extensively document our code, so you should be able to find what you need.
@@ -83,7 +83,7 @@ We welcome contributions to KetchupBot! We recommend looking through currently o
 
 We don't have GitHub discussions turned on, as we would prefer any discussion related to KetchupBot development be facilitated in the [#galaxypedia-discussion channel of the Galaxypedia Discord Server](https://discord.gg/C4xhTz9KAD).
 
-As always, we highly encourage you to [reach out to Galaxypedia Staff](https://discord.gg/hsr4Dq6Ha6) if you have any questions or need any help with this, we don't mind, seriously.
+As always, we highly encourage you to [reach out to Galaxypedia Staff](https://discord.gg/hsr4Dq6Ha6) if you have any questions or need any help with this; we don't mind, seriously.
 
 ## Notices & Terms
 This software is Open Source and licensed under the MIT license. You must follow the rules in the license when contributing, modifying, using, and/or redistributing the software. In addition to the license, you must follow the Galaxypedia's [Terms of Service](https://robloxgalaxy.wiki/wiki/Galaxypedia:Terms_of_Service#4._Rules,_Policies,_Guidelines).

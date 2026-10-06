@@ -103,7 +103,7 @@ public class MediaWikiClient
     public async Task<string> GetArticle(string title)
     {
         return (await GetArticles([title])).FirstOrDefault().Value ??
-               throw new InvalidOperationException("Failed to fetch article");
+               throw new InvalidOperationException("Failed to fetch article " + title);
     }
 
     /// <summary>

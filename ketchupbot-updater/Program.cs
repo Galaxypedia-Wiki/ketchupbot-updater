@@ -212,18 +212,6 @@ public class Program
 
             #endregion
 
-            #region Sentry
-#if !DEBUG
-            SentrySdk.Init(options =>
-            {
-                options.Dsn = applicationBuilder.Configuration["SENTRY_DSN"] ?? "";
-                options.AutoSessionTracking = true;
-                options.TracesSampleRate = 1.0;
-                options.ProfilesSampleRate = 1.0;
-            });
-#endif
-            #endregion
-
             #region Ship Option Handler
 
             string[] shipsOptionValue = handler.ParseResult.GetValueForOption(shipsOption)!;

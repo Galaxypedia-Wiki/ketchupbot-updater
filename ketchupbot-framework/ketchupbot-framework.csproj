@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net8.0</TargetFramework>
+        <TargetFramework>net10.0</TargetFramework>
         <RootNamespace>ketchupbot_framework</RootNamespace>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
@@ -17,10 +17,10 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="JsonDiffPatch.Net" Version="2.3.0"/>
-        <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="8.0.1"/>
-        <PackageReference Include="Newtonsoft.Json" Version="13.0.3"/>
-        <PackageReference Include="Serilog" Version="4.0.1"/>
+        <PackageReference Include="JsonDiffPatch.Net" Version="2.5.0"/>
+        <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="10.0.12"/>
+        <PackageReference Include="Newtonsoft.Json" Version="13.0.4"/>
+        <PackageReference Include="Serilog" Version="4.4.0"/>
     </ItemGroup>
 
 </Project>

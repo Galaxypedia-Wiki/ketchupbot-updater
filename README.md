@@ -54,7 +54,7 @@ Use `crontab -e` as that user and add the example's job line to your existing cr
 KetchupBot is very easy to get up and running. The steps below will walk you through setting up a development environment.
 
 #### Prerequisites:
-- [.NET SDK 8.0](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)
+- [.NET SDK 10.0](https://dotnet.microsoft.com/en-us/download/dotnet/10.0)
 - An IDE for C#
   - We recommend using JetBrains Rider
   - Visual Studio should work fine as well

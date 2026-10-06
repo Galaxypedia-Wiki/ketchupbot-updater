@@ -5,6 +5,7 @@ using KBot.Framework.API;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Polly;
 using Polly.Extensions.Http;
 using Serilog;
@@ -17,6 +18,7 @@ public static class ServiceCollectionExtensions
     {
         services.AddSerilog();
         services.AddMemoryCache();
+        services.AddSingleton<UpdaterRunner>();
 
         #region HttpClient
 
@@ -77,6 +79,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<ShipUpdater>(provider => new ShipUpdater(
             provider.GetRequiredService<MediaWikiClient>(),
             provider.GetRequiredService<ApiManager>(),
+            provider.GetRequiredService<ILogger<ShipUpdater>>(),
             dryRun));
 
         if (turrets)

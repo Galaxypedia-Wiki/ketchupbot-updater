@@ -1,0 +1,11 @@
+{
+  "profiles": {
+    "KBot Development": {
+      "commandName": "Project",
+      "commandLineArgs": "--dry-run",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development"
+      }
+    }
+  }
+}

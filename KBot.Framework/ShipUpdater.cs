@@ -2,7 +2,7 @@ using System.Diagnostics;
 using System.Text;
 using System.Text.RegularExpressions;
 using KBot.Framework.API;
-using Serilog;
+using Microsoft.Extensions.Logging;
 
 namespace KBot.Framework;
 
@@ -12,7 +12,8 @@ namespace KBot.Framework;
 /// </summary>
 /// <param name="bot">The <see cref="MediaWikiClient" /> instance to use for interacting with the wiki</param>
 /// <param name="apiManager">The <see cref="ApiManager" /> instance to use for making API requests</param>
-public partial class ShipUpdater(MediaWikiClient bot, ApiManager apiManager, bool dryRun = false)
+/// <param name="logger">The logger for ship updates</param>
+public partial class ShipUpdater(MediaWikiClient bot, ApiManager apiManager, ILogger<ShipUpdater> logger, bool dryRun = false)
 {
     private const int MaxLength = 12;
 
@@ -57,28 +58,28 @@ public partial class ShipUpdater(MediaWikiClient bot, ApiManager apiManager, boo
 #if DEBUG
                 var updateStart = Stopwatch.StartNew();
 #endif
-                Log.Information("{Identifier} Updating ship...", GetShipIdentifier(ship));
+                logger.LogInformation("{Identifier} Updating ship...", GetShipIdentifier(ship));
                 await UpdateShip(ship, shipDatas.GetValueOrDefault(ship), articles.GetValueOrDefault(ship));
 #if DEBUG
                 updateStart.Stop();
-                Log.Information("{ShipIdentifier)} Updated ship in {UpdateStartElapsedMilliseconds}ms",
+                logger.LogInformation("{ShipIdentifier)} Updated ship in {UpdateStartElapsedMilliseconds}ms",
                     GetShipIdentifier(ship), updateStart.ElapsedMilliseconds);
 #else
-                Log.Information("{ShipIdentifier} Updated ship", GetShipIdentifier(ship));
+                logger.LogInformation("{ShipIdentifier} Updated ship", GetShipIdentifier(ship));
 #endif
             }
             catch (ShipAlreadyUpdatedException)
             {
-                Log.Information("{Identifier} Ship is up-to-date", GetShipIdentifier(ship));
+                logger.LogInformation("{Identifier} Ship is up-to-date", GetShipIdentifier(ship));
             }
             catch (Exception e)
             {
-                Log.Error(e, "{Identifier} Failed to update ship", GetShipIdentifier(ship));
+                logger.LogError(e, "{Identifier} Failed to update ship", GetShipIdentifier(ship));
             }
         });
 
         massUpdateStart.Stop();
-        Log.Information("Finished updating ships in {Elapsed}s", massUpdateStart.ElapsedMilliseconds / 1000);
+        logger.LogInformation("Finished updating ships in {Elapsed}s", massUpdateStart.ElapsedMilliseconds / 1000);
     }
 
     /// <summary>
@@ -110,7 +111,7 @@ public partial class ShipUpdater(MediaWikiClient bot, ApiManager apiManager, boo
 
             if (shipData == null)
             {
-                Log.Error("Ship not found in API data: {0}", ship);
+                logger.LogError("Ship not found in API data: {0}", ship);
                 return;
             }
 
@@ -131,7 +132,7 @@ public partial class ShipUpdater(MediaWikiClient bot, ApiManager apiManager, boo
 
 #if DEBUG
             fetchArticleStart.Stop();
-            Log.Debug("{Identifier} Fetched article in {1}ms", GetShipIdentifier(ship),
+            logger.LogDebug("{Identifier} Fetched article in {1}ms", GetShipIdentifier(ship),
                 fetchArticleStart.ElapsedMilliseconds);
 #endif
         }
@@ -151,7 +152,7 @@ public partial class ShipUpdater(MediaWikiClient bot, ApiManager apiManager, boo
 
 #if DEBUG
         parsingInfoboxStart.Stop();
-        Log.Debug("{Identifier} Parsed infobox in {1}ms", GetShipIdentifier(ship),
+        logger.LogDebug("{Identifier} Parsed infobox in {1}ms", GetShipIdentifier(ship),
             parsingInfoboxStart.ElapsedMilliseconds);
 #endif
 
@@ -168,7 +169,7 @@ public partial class ShipUpdater(MediaWikiClient bot, ApiManager apiManager, boo
 
 #if DEBUG
         mergeDataStart.Stop();
-        Log.Debug("{Identifier} Merged data in {1}ms", GetShipIdentifier(ship), mergeDataStart.ElapsedMilliseconds);
+        logger.LogDebug("{Identifier} Merged data in {1}ms", GetShipIdentifier(ship), mergeDataStart.ElapsedMilliseconds);
 #endif
 
         #endregion
@@ -183,7 +184,7 @@ public partial class ShipUpdater(MediaWikiClient bot, ApiManager apiManager, boo
 
 #if DEBUG
         sanitizeDataStart.Stop();
-        Log.Debug("{Identifier} Sanitized data in {1}ms", GetShipIdentifier(ship),
+        logger.LogDebug("{Identifier} Sanitized data in {1}ms", GetShipIdentifier(ship),
             sanitizeDataStart.ElapsedMilliseconds);
 #endif
 
@@ -206,7 +207,7 @@ public partial class ShipUpdater(MediaWikiClient bot, ApiManager apiManager, boo
 
 #if DEBUG
         wikitextConstructionStart.Stop();
-        Log.Debug("{Identifier} Constructed wikitext in {1}ms", GetShipIdentifier(ship),
+        logger.LogDebug("{Identifier} Constructed wikitext in {1}ms", GetShipIdentifier(ship),
             wikitextConstructionStart.ElapsedMilliseconds);
 #endif
 
@@ -232,7 +233,7 @@ public partial class ShipUpdater(MediaWikiClient bot, ApiManager apiManager, boo
 
 #if DEBUG
         articleEditStart.Stop();
-        Log.Debug("{Identifier} Edited page in {1}ms", GetShipIdentifier(ship), articleEditStart.ElapsedMilliseconds);
+        logger.LogDebug("{Identifier} Edited page in {1}ms", GetShipIdentifier(ship), articleEditStart.ElapsedMilliseconds);
 #endif
 
         #endregion

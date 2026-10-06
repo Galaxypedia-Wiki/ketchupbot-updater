@@ -1,6 +1,7 @@
 using System.CommandLine;
 using System.Reflection;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
 using Serilog.Core;
@@ -151,7 +152,7 @@ public class Program
             applicationBuilder.Services.AddUpdaterServices(DryRun, turrets);
 
             IHost app = applicationBuilder.Build();
-            await UpdaterRunner.RunAsync(app.Services, parseResult.GetValue(shipsOption)!, turrets);
+            await app.Services.GetRequiredService<UpdaterRunner>().RunAsync(parseResult.GetValue(shipsOption)!, turrets);
         });
 
         return await rootCommand.Parse(args).InvokeAsync();

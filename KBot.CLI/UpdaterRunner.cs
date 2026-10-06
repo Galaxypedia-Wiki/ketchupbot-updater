@@ -1,18 +1,18 @@
 using KBot.Framework;
 using KBot.Framework.API;
 using Microsoft.Extensions.DependencyInjection;
-using Serilog;
+using Microsoft.Extensions.Logging;
 
 namespace KBot.CLI;
 
-public static class UpdaterRunner
+public class UpdaterRunner(IServiceProvider services, ILogger<UpdaterRunner> logger)
 {
-    public static async Task RunAsync(IServiceProvider services, string[] ships, bool turrets)
+    public async Task RunAsync(string[] ships, bool turrets)
     {
         if (await services.GetRequiredService<MediaWikiClient>().IsLoggedInAsync())
-            Log.Information("Logged in to MediaWiki");
+            logger.LogInformation("Logged in to MediaWiki");
         else
-            Log.Error("Using MediaWiki anonymously. Editing will not be possible.");
+            logger.LogError("Using MediaWiki anonymously. Editing will not be possible.");
 
         #region Ship Option Handler
 

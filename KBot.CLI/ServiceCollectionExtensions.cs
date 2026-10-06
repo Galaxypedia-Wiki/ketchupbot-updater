@@ -1,5 +1,4 @@
 using System.Net;
-using System.Reflection;
 using KBot.Framework;
 using KBot.Framework.API;
 using Microsoft.Extensions.Caching.Memory;
@@ -23,7 +22,7 @@ public static class ServiceCollectionExtensions
         #region HttpClient
 
         string userAgent =
-            $"KetchupBot-Updater/{Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "1.0"}";
+            $"KetchupBot-Updater/{ApplicationVersion.Value}";
 
         services.AddHttpClient<ApiManager>(client =>
             {

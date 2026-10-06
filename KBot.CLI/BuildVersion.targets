@@ -1,0 +1,18 @@
+<Project>
+    <Target Name="SetGitBuildVersion" BeforeTargets="GetAssemblyVersion;CoreGenerateAssemblyInfo" DependsOnTargets="GetGitBuildVersion" />
+    <Target Name="GetGitBuildVersion">
+        <Exec Command="git -c core.fsmonitor=false rev-parse HEAD" WorkingDirectory="$(MSBuildProjectDirectory)" ConsoleToMSBuild="true" IgnoreExitCode="true" StandardOutputImportance="Low" StandardErrorImportance="Low">
+            <Output TaskParameter="ConsoleOutput" PropertyName="BuildCommit" />
+            <Output TaskParameter="ExitCode" PropertyName="GitVersionExitCode" />
+        </Exec>
+        <Exec Command="git -c core.fsmonitor=false status --porcelain --untracked-files=normal" WorkingDirectory="$(MSBuildProjectDirectory)" ConsoleToMSBuild="true" IgnoreExitCode="true" StandardOutputImportance="Low" StandardErrorImportance="Low">
+            <Output TaskParameter="ConsoleOutput" PropertyName="GitChanges" />
+            <Output TaskParameter="ExitCode" PropertyName="GitStatusExitCode" />
+        </Exec>
+        <PropertyGroup>
+            <InformationalVersion>DEV</InformationalVersion>
+            <InformationalVersion Condition="'$(GitVersionExitCode)' == '0' and '$(GitStatusExitCode)' == '0' and '$(GitChanges)' == '' and !$([System.String]::Copy(';$(DefineConstants);').Contains(';DEBUG;'))">$(BuildCommit)</InformationalVersion>
+            <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+        </PropertyGroup>
+    </Target>
+</Project>

@@ -91,7 +91,7 @@ public class Program
             }
 
             Console.WriteLine(
-                $"\nketchupbot-updater | v{Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "Development"} | {DateTime.Now}\n");
+                $"\nketchupbot-updater | {ApplicationVersion.Value} | {DateTime.Now}\n");
 
             HostApplicationBuilder applicationBuilder = Host.CreateApplicationBuilder(new HostApplicationBuilderSettings
             {

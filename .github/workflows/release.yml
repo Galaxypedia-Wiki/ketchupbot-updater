@@ -1,0 +1,93 @@
+name: Publish latest native release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: latest-release
+  cancel-in-progress: false
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            rid: linux-x64
+          - os: windows-latest
+            rid: win-x64
+          - os: macos-15-intel
+            rid: osx-x64
+          - os: macos-15
+            rid: osx-arm64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - name: Test
+        run: dotnet test KBot.Tests/KBot.Tests.csproj -c Release
+      - name: Publish native binary
+        run: dotnet publish KBot.CLI/KBot.CLI.csproj -c Release -r ${{ matrix.rid }} -o ${{ runner.temp }}/publish
+      - name: Smoke test and verify commit version
+        shell: pwsh
+        run: |
+          $binary = "${{ runner.temp }}/publish/KBot.CLI"
+          if ($IsWindows) { $binary += '.exe' }
+          & $binary --help
+          if ($LASTEXITCODE -ne 0) { throw 'Help failed' }
+          $version = & $binary --version
+          if ($LASTEXITCODE -ne 0 -or $version.Trim() -ne '${{ github.sha }}') { throw "Unexpected build version: $version" }
+      - name: Package
+        shell: pwsh
+        run: |
+          $source = '${{ runner.temp }}/publish'
+          $archive = '${{ runner.temp }}/KBot-${{ matrix.rid }}'
+          if ($IsWindows) {
+            Compress-Archive -Path "$source/KBot.CLI.exe" -DestinationPath "$archive.zip"
+          } else {
+            tar -czf "$archive.tar.gz" -C $source KBot.CLI
+            if ($LASTEXITCODE -ne 0) { throw 'Packaging failed' }
+          }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: KBot-${{ matrix.rid }}
+          path: ${{ runner.temp }}/KBot-${{ matrix.rid }}.*
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: assets
+          merge-multiple: true
+      - name: Update latest tag and release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          BUILD_COMMIT: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          if gh api repos/$GH_REPO/git/ref/tags/latest >/dev/null 2>&1; then
+            gh api --method PATCH repos/$GH_REPO/git/refs/tags/latest -f sha="$BUILD_COMMIT" -F force=true
+          else
+            gh api --method POST repos/$GH_REPO/git/refs -f ref=refs/tags/latest -f sha="$BUILD_COMMIT"
+          fi
+          if gh release view latest >/dev/null 2>&1; then
+            gh release view latest --json assets --jq '.assets[].name' | while IFS= read -r asset; do
+              gh release delete-asset latest "$asset" --yes
+            done
+            gh release edit latest --title 'Latest build' --notes "Built from commit $BUILD_COMMIT" --latest
+            gh release upload latest assets/*
+          else
+            gh release create latest assets/* --title 'Latest build' --notes "Built from commit $BUILD_COMMIT" --latest
+          fi

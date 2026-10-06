@@ -8,11 +8,12 @@ We provide prebuilt binaries for running ketchupbot. Everything is contained wit
 
 Use these binaries if you want to run KetchupBot without installing the .NET runtime or building from source.
 
-#### Development Builds
-We recommend using these builds when going with prebuilt binaries. They're built on every change and will have all the latest features and bug fixes. You can find the latest development build [here](). Make sure to check back often for new builds, as they can be rather frequent.
+#### Latest build
+The [latest release](https://github.com/Galaxypedia-Wiki/ketchupbot-updater/releases/tag/latest) contains native binaries for Windows x64, Linux x64, and macOS x64/ARM64. After all release jobs pass, CI moves the `latest` tag to the built commit and replaces the release assets.
 
-#### Stable Release
-You can download the latest stable release from the [releases page](). These are built on every release and are considered stable for production use. However, releases are made infrequently, so they may not have the latest features and bug fixes. We typically use releases more as a checkpoint for the project, rather than a new version. So you should only use these if you want a stable version of KetchupBot and don't want to deal with the hassle of updating it frequently.
+The application version is the full Git commit it was built from. Debug builds and builds with staged, unstaged, or untracked non-ignored changes anywhere in the repository report `DEV`. Builds without Git metadata also report `DEV`. This is determined at build time; editing files does not change an already-built executable. Ignored local settings and build outputs do not mark a build as modified.
+
+For local packaging, `createRelease.sh` builds only for the current supported host platform; CI builds each target on its own operating system.
 
 ### Running from source
 If you want to run KetchupBot from source, you can do so by following the development instructions below. This is the recommended way to run KetchupBot if you're developing it and not planning on using it with CI. It also gives you the most control over the program.

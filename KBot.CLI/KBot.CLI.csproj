@@ -55,4 +55,6 @@
         <ProjectReference Include="..\KBot.Framework\KBot.Framework.csproj" />
     </ItemGroup>
 
+    <Import Project="BuildVersion.targets" />
+
 </Project>

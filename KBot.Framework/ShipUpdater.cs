@@ -13,7 +13,7 @@ namespace KBot.Framework;
 /// <param name="bot">The <see cref="MediaWikiClient" /> instance to use for interacting with the wiki</param>
 /// <param name="apiManager">The <see cref="ApiManager" /> instance to use for making API requests</param>
 /// <param name="logger">The logger for ship updates</param>
-public partial class ShipUpdater(MediaWikiClient bot, ApiManager apiManager, ILogger<ShipUpdater> logger, bool dryRun = false)
+public partial class ShipUpdater(MediaWikiClient bot, ApiManager apiManager, ILogger<ShipUpdater> logger, bool dryRun = false, bool verbose = false)
 {
     private const int MaxLength = 12;
 
@@ -28,9 +28,9 @@ public partial class ShipUpdater(MediaWikiClient bot, ApiManager apiManager, ILo
     /// <param name="shipDatas">The ship data to use during the update run</param>
     /// <param name="threads"></param>
     public async Task UpdateAllShips(Dictionary<string, Dictionary<string, string>>? shipDatas = null,
-        int threads = -1)
+        int threads = -1, Action<ShipUpdateProgress>? progress = null)
     {
-        await MassUpdateShips((await apiManager.GetShipsData()).Keys.ToList(), shipDatas, threads);
+        await MassUpdateShips((await apiManager.GetShipsData()).Keys.ToList(), shipDatas, threads, progress);
     }
 
     /// <summary>
@@ -40,7 +40,7 @@ public partial class ShipUpdater(MediaWikiClient bot, ApiManager apiManager, ILo
     /// <param name="shipDatas"></param>
     /// <param name="threads"></param>
     public async Task MassUpdateShips(List<string> ships,
-        Dictionary<string, Dictionary<string, string>>? shipDatas = null, int threads = -1)
+        Dictionary<string, Dictionary<string, string>>? shipDatas = null, int threads = -1, Action<ShipUpdateProgress>? progress = null)
     {
         var massUpdateStart = Stopwatch.StartNew();
         shipDatas ??= await apiManager.GetShipsData();
@@ -48,38 +48,48 @@ public partial class ShipUpdater(MediaWikiClient bot, ApiManager apiManager, ILo
 
         Dictionary<string, string> articles = await bot.GetArticlesAsync(ships.ToArray());
 
+        int updated = 0, unchanged = 0, failed = 0;
+        object progressLock = new();
+        progress?.Invoke(new(ships.Count, updated, unchanged, failed));
+
         await Parallel.ForEachAsync(ships, new ParallelOptions
         {
             MaxDegreeOfParallelism = threads
         }, async (ship, _) =>
         {
+            ShipUpdateOutcome outcome;
             try
             {
-#if DEBUG
-                var updateStart = Stopwatch.StartNew();
-#endif
-                logger.LogInformation("{Identifier} Updating ship...", GetShipIdentifier(ship));
+                logger.LogDebug("{Identifier} Updating ship...", GetShipIdentifier(ship));
                 await UpdateShip(ship, shipDatas.GetValueOrDefault(ship), articles.GetValueOrDefault(ship));
-#if DEBUG
-                updateStart.Stop();
-                logger.LogInformation("{ShipIdentifier)} Updated ship in {UpdateStartElapsedMilliseconds}ms",
-                    GetShipIdentifier(ship), updateStart.ElapsedMilliseconds);
-#else
-                logger.LogInformation("{ShipIdentifier} Updated ship", GetShipIdentifier(ship));
-#endif
+                outcome = ShipUpdateOutcome.Updated;
+                logger.LogDebug("{ShipIdentifier} Updated ship", GetShipIdentifier(ship));
             }
             catch (ShipAlreadyUpdatedException)
             {
-                logger.LogInformation("{Identifier} Ship is up-to-date", GetShipIdentifier(ship));
+                outcome = ShipUpdateOutcome.Unchanged;
+                logger.LogDebug("{Identifier} Ship is up-to-date", GetShipIdentifier(ship));
             }
             catch (Exception e)
             {
-                logger.LogError(e, "{Identifier} Failed to update ship", GetShipIdentifier(ship));
+                outcome = ShipUpdateOutcome.Failed;
+                if (verbose) logger.LogError(e, "{Identifier} Failed to update ship", GetShipIdentifier(ship));
+            }
+
+            lock (progressLock)
+            {
+                switch (outcome)
+                {
+                    case ShipUpdateOutcome.Updated: updated++; break;
+                    case ShipUpdateOutcome.Unchanged: unchanged++; break;
+                    case ShipUpdateOutcome.Failed: failed++; break;
+                }
+                progress?.Invoke(new(ships.Count, updated, unchanged, failed));
             }
         });
 
         massUpdateStart.Stop();
-        logger.LogInformation("Finished updating ships in {Elapsed}s", massUpdateStart.ElapsedMilliseconds / 1000);
+        logger.LogDebug("Finished updating ships in {Elapsed}s", massUpdateStart.ElapsedMilliseconds / 1000);
     }
 
     /// <summary>
@@ -111,8 +121,7 @@ public partial class ShipUpdater(MediaWikiClient bot, ApiManager apiManager, ILo
 
             if (shipData == null)
             {
-                logger.LogError("Ship not found in API data: {0}", ship);
-                return;
+                throw new InvalidOperationException($"Ship not found in API data: {ship}");
             }
 
             data = shipData;

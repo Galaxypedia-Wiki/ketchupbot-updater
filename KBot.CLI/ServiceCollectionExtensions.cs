@@ -14,7 +14,7 @@ namespace KBot.CLI;
 
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddUpdaterServices(this IServiceCollection services, bool dryRun, bool turrets)
+    public static IServiceCollection AddUpdaterServices(this IServiceCollection services, bool dryRun, bool turrets, bool verbose = false)
     {
         services.AddSerilog();
         services.AddMemoryCache();
@@ -80,7 +80,7 @@ public static class ServiceCollectionExtensions
             provider.GetRequiredService<MediaWikiClient>(),
             provider.GetRequiredService<ApiManager>(),
             provider.GetRequiredService<ILogger<ShipUpdater>>(),
-            dryRun));
+            dryRun, verbose));
 
         if (turrets)
             services.AddSingleton<TurretUpdater>(provider => new TurretUpdater(

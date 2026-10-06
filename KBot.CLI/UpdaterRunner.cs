@@ -7,7 +7,7 @@ namespace KBot.CLI;
 
 public class UpdaterRunner(IServiceProvider services, ILogger<UpdaterRunner> logger)
 {
-    public async Task RunAsync(string[] ships, bool turrets)
+    public async Task RunAsync(string[] ships, bool turrets, bool verbose = false)
     {
         if (await services.GetRequiredService<MediaWikiClient>().IsLoggedInAsync())
             logger.LogInformation("Logged in to MediaWiki");
@@ -18,10 +18,11 @@ public class UpdaterRunner(IServiceProvider services, ILogger<UpdaterRunner> log
 
         if (!ships.First().Equals("none", StringComparison.CurrentCultureIgnoreCase))
         {
-            if (ships.First().Equals("all", StringComparison.CurrentCultureIgnoreCase))
-                await services.GetRequiredService<ShipUpdater>().UpdateAllShips();
-            else
-                await services.GetRequiredService<ShipUpdater>().MassUpdateShips(ships.ToList());
+            ShipUpdater updater = services.GetRequiredService<ShipUpdater>();
+            await ShipProgressDisplay.RunAsync(progress =>
+                ships.First().Equals("all", StringComparison.CurrentCultureIgnoreCase)
+                    ? updater.UpdateAllShips(progress: progress)
+                    : updater.MassUpdateShips(ships.ToList(), progress: progress), verbose);
         }
 
         #endregion

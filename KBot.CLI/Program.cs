@@ -68,12 +68,11 @@ public class Program
         };
 
         var levelSwitch = new LoggingLevelSwitch();
+        var httpLevelSwitch = new LoggingLevelSwitch(LogEventLevel.Warning);
 
         Log.Logger = new LoggerConfiguration()
             .MinimumLevel.ControlledBy(levelSwitch)
-#if !DEBUG
-            .MinimumLevel.Override("System.Net.Http.HttpClient", LogEventLevel.Warning)
-#endif
+            .MinimumLevel.Override("System.Net.Http.HttpClient", httpLevelSwitch)
             .WriteTo.Console(theme: SystemConsoleTheme.Grayscale)
             .CreateLogger();
 
@@ -133,7 +132,6 @@ public class Program
 
 #if DEBUG
             Log.Information("Running in development mode");
-            levelSwitch.MinimumLevel = LogEventLevel.Debug;
             DryRun = true;
 #else
             DryRun = parseResult.GetValue(dryRunOption);
@@ -143,16 +141,17 @@ public class Program
             if (parseResult.GetValue(verboseOption))
             {
                 levelSwitch.MinimumLevel = LogEventLevel.Verbose;
+                httpLevelSwitch.MinimumLevel = LogEventLevel.Verbose;
                 Log.Information("Enabled verbose logging");
             }
 
             #endregion
 
             bool turrets = parseResult.GetValue(turretsOption);
-            applicationBuilder.Services.AddUpdaterServices(DryRun, turrets);
+            applicationBuilder.Services.AddUpdaterServices(DryRun, turrets, parseResult.GetValue(verboseOption));
 
             IHost app = applicationBuilder.Build();
-            await app.Services.GetRequiredService<UpdaterRunner>().RunAsync(parseResult.GetValue(shipsOption)!, turrets);
+            await app.Services.GetRequiredService<UpdaterRunner>().RunAsync(parseResult.GetValue(shipsOption)!, turrets, parseResult.GetValue(verboseOption));
         });
 
         return await rootCommand.Parse(args).InvokeAsync();

@@ -266,10 +266,10 @@ public static partial class WikiParser
     {
         var sb = new StringBuilder();
 
-        sb.AppendLine("{{Ship Infobox");
+        sb.Append("{{Ship Infobox\n");
         foreach (KeyValuePair<string, string> keyValuePair in data)
-            sb.AppendLine($"|{keyValuePair.Key} = {keyValuePair.Value}");
-        sb.AppendLine("}}");
+            sb.Append($"|{keyValuePair.Key} = {keyValuePair.Value}\n");
+        sb.Append("}}");
 
         // Replace $ with $$ to escape the $ character
         sb.Replace("$", "$$");

@@ -8,7 +8,6 @@
         <Nullable>enable</Nullable>
         <Title>ketchupbot-updater</Title>
         <Authors>smallketchup82</Authors>
-        <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
         <AssemblyVersion>5.0.1.0</AssemblyVersion>
         <FileVersion>5.0.1.0</FileVersion>
         <Version>5.0.1</Version>
@@ -49,12 +48,6 @@
 
     <ItemGroup>
         <EmbeddedResource Include="Assets\banner.txt" />
-    </ItemGroup>
-
-    <ItemGroup>
-        <Content Include="..\.dockerignore">
-            <Link>.dockerignore</Link>
-        </Content>
     </ItemGroup>
 
     <ItemGroup>

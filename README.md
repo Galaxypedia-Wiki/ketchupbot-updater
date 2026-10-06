@@ -3,17 +3,10 @@ This is the updater component of the KetchupBot Project. This component facilita
 
 ## Downloading, Running, and Usage
 
-### Running via Docker
-**Do note that the CI Docker image assumes a production environment. Please do not use it for development & debugging! It will not print debug information. Do not use the docker image unless you know what you're doing!**
-
-KetchupBot automatically publishes a docker image on every push, which you can use to run a reproducible build of KetchupBot. You can find the image [here](https://github.com/smallketchup82/ketchupbot-updater/pkgs/container/ketchupbot-updater).
-
-We recommend this method the most for Continuous Integration, as it's the most reliable and reproducible. It's also the easiest way to run KetchupBot, as you don't have to worry about dependencies or setting up a runtime. However, it does use up quite a lot of storage.
-
 ### Running via Binary
 We provide prebuilt binaries for running ketchupbot. Everything is contained within the binary, including the runtime, dependencies, and any assets. These binaries also assume a production environment, so they will not print debug information.
 
-These are mainly distributed for ease of use, but we don't really recommend using them. As they're not as flexible as running from source, nor as reproducible as running with Docker. Use this method if you  don't want to deal with dependencies or working with docker.
+Use these binaries if you want to run KetchupBot without installing the .NET runtime or building from source.
 
 #### Development Builds
 We recommend using these builds when going with prebuilt binaries. They're built on every change and will have all the latest features and bug fixes. You can find the latest development build [here](). Make sure to check back often for new builds, as they can be rather frequent.
@@ -29,6 +22,33 @@ KetchupBot is primarily controlled via CLI arguments. *For any release, you must
 
 #### Scheduling
 Since https://github.com/Galaxypedia-Wiki/ketchupbot-updater/pull/165, KetchupBot no longer includes a daemon mode (built-in job scheduler). We recommend that you run KetchupBot as a one-shot application and schedule its runs via an external task scheduler such as [cron](https://en.wikipedia.org/wiki/Cron) or [Windows Task Scheduler](https://en.wikipedia.org/wiki/Windows_Task_Scheduler). This ensures that KetchupBot isn't using up RAM while idling. And, in the unlikely case where a memory leak occurs within the application, running it as one-shot ensures that the leak doesn't go out of control.
+
+#### systemd examples (Linux)
+Optional [service](ketchupbot-updater.service) and [timer](ketchupbot-updater.timer) examples are provided. You can also run the application manually or use another scheduler.
+
+The service assumes a Linux binary at `/opt/ketchupbot-updater/ketchupbot-updater`, a dedicated `ketchupbot` user, and an `appsettings.json` file in `/opt/ketchupbot-updater`. Give that user permission to execute the binary and read the settings. Edit the service's user, paths, and arguments to match your installation; the sample updates all ships and turrets. The timer runs every hour at `xx:00` in the system's local timezone and catches up once if a scheduled run was missed while the machine was off.
+
+After reviewing and editing the examples, install them:
+
+```bash
+sudo cp ketchupbot-updater.{service,timer} /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now ketchupbot-updater.timer
+```
+
+For a manual run and logs:
+
+```bash
+sudo systemctl start ketchupbot-updater.service
+sudo journalctl -u ketchupbot-updater.service
+```
+
+Enable the timer only if you want scheduled runs. To stop scheduling, run `sudo systemctl disable --now ketchupbot-updater.timer`.
+
+#### cron example (Linux)
+The [example crontab](ketchupbot-updater.crontab) runs every hour at `xx:00` in the system's local timezone. Edit the paths and arguments, and ensure the user running the job can execute the binary, read `appsettings.json`, and write the log file.
+
+Use `crontab -e` as that user and add the example's job line to your existing crontab. Choose either cron or the systemd timer to avoid duplicate runs.
 
 ## Developing
 KetchupBot is very easy to get up and running. The steps below will walk you through setting up a development environment.

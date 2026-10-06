@@ -1,0 +1,11 @@
+[Unit]
+Description=KetchupBot Galaxypedia updater
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=ketchupbot
+WorkingDirectory=/opt/ketchupbot-updater
+ExecStart=/opt/ketchupbot-updater/ketchupbot-updater --ships all --turrets
+TimeoutStartSec=infinity

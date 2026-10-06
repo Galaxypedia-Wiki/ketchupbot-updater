@@ -1,0 +1,11 @@
+[Unit]
+Description=Run KetchupBot hourly
+
+[Timer]
+OnCalendar=*-*-* *:00:00
+AccuracySec=1s
+RandomizedDelaySec=0
+Persistent=true
+
+[Install]
+WantedBy=timers.target

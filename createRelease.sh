@@ -22,22 +22,22 @@ fi
 
 ## Build & Package for windows
 echo "Building for Windows"
-dotnet publish ketchupbot-updater -c Release -r win-x64 -o output/win-x64 --self-contained -p:PublishSingleFile=true
-7z a -tzip output/ketchupbot-updater-win-x64.zip ./output/win-x64/ketchupbot-updater.exe
+dotnet publish KBot.CLI -c Release -r win-x64 -o output/win-x64 --self-contained -p:PublishSingleFile=true
+7z a -tzip output/ketchupbot-updater-win-x64.zip ./output/win-x64/KBot.CLI.exe
 rm -rf output/win-x64
 echo "Windows build complete"
 
 ## Build & Package for MacOS
 echo "Building for MacOS"
-dotnet publish ketchupbot-updater -c Release -r osx-x64 -o output/osx-x64 --self-contained -p:PublishSingleFile=true
-tar -czvf output/ketchupbot-updater-osx-x64.tar.gz -C ./output/osx-x64 ketchupbot-updater
+dotnet publish KBot.CLI -c Release -r osx-x64 -o output/osx-x64 --self-contained -p:PublishSingleFile=true
+tar -czvf output/ketchupbot-updater-osx-x64.tar.gz -C ./output/osx-x64 KBot.CLI
 rm -rf output/osx-x64
 echo "MacOS build complete"
 
 ## Build & Package for Linux
 echo "Building for Linux"
-dotnet publish ketchupbot-updater -c Release -r linux-x64 -o output/linux-x64 --self-contained -p:PublishSingleFile=true
-tar -czvf output/ketchupbot-updater-linux-x64.tar.gz -C ./output/linux-x64 ketchupbot-updater
+dotnet publish KBot.CLI -c Release -r linux-x64 -o output/linux-x64 --self-contained -p:PublishSingleFile=true
+tar -czvf output/ketchupbot-updater-linux-x64.tar.gz -C ./output/linux-x64 KBot.CLI
 rm -rf output/linux-x64
 echo "Linux build complete"
 

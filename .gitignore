@@ -1,5 +1,6 @@
-ketchupbot-updater/.env
-ketchupbot-updater/appsettings.json
+.idea/
+KBot.CLI/.env
+KBot.CLI/appsettings.json
 
 ### Vim template
 # Swap

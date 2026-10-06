@@ -1,3 +1,3 @@
 # User crontab example: runs hourly at minute 00 in the system's local timezone.
 # Edit paths and arguments, and ensure this user can write ketchupbot-updater.log.
-0 * * * * cd /opt/ketchupbot-updater && ./ketchupbot-updater --ships all --turrets >> /opt/ketchupbot-updater/ketchupbot-updater.log 2>&1
+0 * * * * cd /opt/ketchupbot-updater && ./KBot.CLI --ships all --turrets >> /opt/ketchupbot-updater/ketchupbot-updater.log 2>&1

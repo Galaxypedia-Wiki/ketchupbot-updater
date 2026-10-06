@@ -7,5 +7,5 @@ After=network-online.target
 Type=oneshot
 User=ketchupbot
 WorkingDirectory=/opt/ketchupbot-updater
-ExecStart=/opt/ketchupbot-updater/ketchupbot-updater --ships all --turrets
+ExecStart=/opt/ketchupbot-updater/KBot.CLI --ships all --turrets
 TimeoutStartSec=infinity

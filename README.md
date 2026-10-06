@@ -26,7 +26,7 @@ Since https://github.com/Galaxypedia-Wiki/ketchupbot-updater/pull/165, KetchupBo
 #### systemd examples (Linux)
 Optional [service](ketchupbot-updater.service) and [timer](ketchupbot-updater.timer) examples are provided. You can also run the application manually or use another scheduler.
 
-The service assumes a Linux binary at `/opt/ketchupbot-updater/ketchupbot-updater`, a dedicated `ketchupbot` user, and an `appsettings.json` file in `/opt/ketchupbot-updater`. Give that user permission to execute the binary and read the settings. Edit the service's user, paths, and arguments to match your installation; the sample updates all ships and turrets. The timer runs every hour at `xx:00` in the system's local timezone and catches up once if a scheduled run was missed while the machine was off.
+The service assumes a Linux binary at `/opt/ketchupbot-updater/KBot.CLI`, a dedicated `ketchupbot` user, and an `appsettings.json` file in `/opt/ketchupbot-updater`. Give that user permission to execute the binary and read the settings. Edit the service's user, paths, and arguments to match your installation; the sample updates all ships and turrets. The timer runs every hour at `xx:00` in the system's local timezone and catches up once if a scheduled run was missed while the machine was off.
 
 After reviewing and editing the examples, install them:
 
@@ -68,15 +68,15 @@ cd ketchupbot-updater
 ```
 
 ### Setting up secrets
-Copy `ketchupbot-updater/appsettings.example.json` to `appsettings.json` and fill in `GIAPI_URL`, `MWUSERNAME`, and `MWPASSWORD`. All three settings must be non-empty. By default, the application reads this file from the executable's directory. Use `--secrets-directory /path/to/config` to select another directory; relative paths are resolved from the working directory.
+Copy `KBot.CLI/appsettings.example.json` to `appsettings.json` and fill in `GIAPI_URL`, `MWUSERNAME`, and `MWPASSWORD`. All three settings must be non-empty. By default, the application reads this file from the executable's directory. Use `--secrets-directory /path/to/config` to select another directory; relative paths are resolved from the working directory.
 
 You can supply the same keys through environment variables, which override JSON values. The JSON file is optional when all required settings are supplied through other sources. `.env` files are no longer loaded automatically.
 
 For development, use .NET User Secrets:
 
 ```bash
-dotnet user-secrets set "MWUSERNAME" "your-username" --project ketchupbot-updater
-dotnet user-secrets set "MWPASSWORD" "your-password" --project ketchupbot-updater
+dotnet user-secrets set "MWUSERNAME" "your-username" --project KBot.CLI
+dotnet user-secrets set "MWPASSWORD" "your-password" --project KBot.CLI
 ```
 
 Set `DOTNET_ENVIRONMENT=Development` to load User Secrets. Configuration precedence is environment variables, then development User Secrets, then JSON. Keep credential files out of source control and restrict their permissions to the account running the updater.
@@ -92,7 +92,7 @@ Open `ketchupbot-updater.sln` in your IDE to get started. Run configurations are
 #### From the command line
 Use the following commands to run the project:
 ```bash
-dotnet run --project ketchupbot-updater
+dotnet run --project KBot.CLI
 ```
 
 ## Contributing

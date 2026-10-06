@@ -1,10 +1,10 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ketchupbot-updater", "ketchupbot-updater\ketchupbot-updater.csproj", "{0C44F8F8-0A3D-4233-963C-3662246445D7}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KBot.CLI", "KBot.CLI\KBot.CLI.csproj", "{0C44F8F8-0A3D-4233-963C-3662246445D7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ketchupbot-updater-tests", "ketchupbot-updater-tests\ketchupbot-updater-tests.csproj", "{70DD68ED-11B5-4B76-9663-2CDE5ACC5E5E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KBot.Tests", "KBot.Tests\KBot.Tests.csproj", "{70DD68ED-11B5-4B76-9663-2CDE5ACC5E5E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ketchupbot-framework", "ketchupbot-framework\ketchupbot-framework.csproj", "{CEA415C6-6CA0-4117-9962-CFEB79371AD8}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KBot.Framework", "KBot.Framework\KBot.Framework.csproj", "{CEA415C6-6CA0-4117-9962-CFEB79371AD8}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{5B671AED-2C58-4C95-B11D-0652A62DF4B6}"
 	ProjectSection(SolutionItems) = preProject

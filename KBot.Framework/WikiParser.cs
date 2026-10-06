@@ -15,7 +15,7 @@ public static partial class WikiParser
         bool inLink = false, inTemplate = false;
         int lastIndex = 0;
 
-        Match match = PairRegex().Match(text);
+        Match match = pairRegex().Match(text);
 
         while (match.Success)
         {
@@ -93,7 +93,7 @@ public static partial class WikiParser
         if (!infoboxKeyPairs.TryGetValue("image", out string? image) || !image.StartsWith("<gallery>"))
             return infoboxKeyPairs;
 
-        Match originalGallery = GalleryRegex().Match(text);
+        Match originalGallery = galleryRegex().Match(text);
 
         if (!originalGallery.Success)
             throw new InvalidOperationException("Gallery found in infobox but unable to extract it");
@@ -331,10 +331,10 @@ public static partial class WikiParser
     private static partial Regex TURRET_TABLE_REGEX();
 
     [GeneratedRegex(@"\[\[|]]|\{\{|}}|\|")]
-    private static partial Regex PairRegex();
+    private static partial Regex pairRegex();
 
     [GeneratedRegex(@"<gallery.*?>.*?</gallery>", RegexOptions.Singleline)]
-    private static partial Regex GalleryRegex();
+    private static partial Regex galleryRegex();
 
     #endregion
 }

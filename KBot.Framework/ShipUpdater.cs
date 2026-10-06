@@ -40,7 +40,8 @@ public partial class ShipUpdater(MediaWikiClient bot, ApiManager apiManager, ILo
     /// <param name="shipDatas"></param>
     /// <param name="threads"></param>
     public async Task MassUpdateShips(List<string> ships,
-        Dictionary<string, Dictionary<string, string>>? shipDatas = null, int threads = -1, Action<ShipUpdateProgress>? progress = null)
+        Dictionary<string, Dictionary<string, string>>? shipDatas = null, int threads = -1, Action<ShipUpdateProgress>? progress = null,
+        Action<string, string>? infoboxDiff = null)
     {
         var massUpdateStart = Stopwatch.StartNew();
         shipDatas ??= await apiManager.GetShipsData();
@@ -61,7 +62,8 @@ public partial class ShipUpdater(MediaWikiClient bot, ApiManager apiManager, ILo
             try
             {
                 logger.LogDebug("{Identifier} Updating ship...", GetShipIdentifier(ship));
-                await UpdateShip(ship, shipDatas.GetValueOrDefault(ship), articles.GetValueOrDefault(ship));
+                await UpdateShip(ship, shipDatas.GetValueOrDefault(ship), articles.GetValueOrDefault(ship),
+                    ships.Count == 1 ? infoboxDiff : null);
                 outcome = ShipUpdateOutcome.Updated;
                 logger.LogDebug("{ShipIdentifier} Updated ship", GetShipIdentifier(ship));
             }
@@ -105,7 +107,8 @@ public partial class ShipUpdater(MediaWikiClient bot, ApiManager apiManager, ILo
     ///     Provide a string to use as an article. If left null, it will be fetched based on
     ///     <paramref name="ship" />
     /// </param>
-    private async Task UpdateShip(string ship, Dictionary<string, string>? data = null, string? shipArticle = null)
+    private async Task UpdateShip(string ship, Dictionary<string, string>? data = null, string? shipArticle = null,
+        Action<string, string>? infoboxDiff = null)
     {
         ship = GetShipName(ship);
 
@@ -189,7 +192,7 @@ public partial class ShipUpdater(MediaWikiClient bot, ApiManager apiManager, ILo
         var sanitizeDataStart = Stopwatch.StartNew();
 #endif
 
-        (Dictionary<string, string> finalData, List<string> updatedParameters) sanitizedData = WikiParser.SanitizeData(mergedData.sortedData, parsedInfobox);
+        (Dictionary<string, string> finalData, List<string> updatedParameters) sanitizedData = WikiParser.SanitizeData(WikiParser.MigrateImages(mergedData.sortedData), parsedInfobox);
 
 #if DEBUG
         sanitizeDataStart.Stop();
@@ -212,7 +215,9 @@ public partial class ShipUpdater(MediaWikiClient bot, ApiManager apiManager, ILo
         var wikitextConstructionStart = Stopwatch.StartNew();
 #endif
 
-        string newWikitext = WikiParser.ReplaceInfobox(shipArticle, WikiParser.ObjectToWikitext(sanitizedData.finalData));
+        string newInfobox = WikiParser.ObjectToWikitext(sanitizedData.finalData);
+        infoboxDiff?.Invoke(WikiParser.ExtractInfobox(shipArticle), newInfobox);
+        string newWikitext = WikiParser.ReplaceInfobox(shipArticle, newInfobox);
 
 #if DEBUG
         wikitextConstructionStart.Stop();
@@ -230,6 +235,9 @@ public partial class ShipUpdater(MediaWikiClient bot, ApiManager apiManager, ILo
 
         var editSummary = new StringBuilder();
         editSummary.AppendLine("Automated ship data update.");
+        if (parsedInfobox.ContainsKey("image") && !sanitizedData.finalData.ContainsKey("image") &&
+            sanitizedData.finalData.ContainsKey("images"))
+            editSummary.AppendLine("Migrated image field to images JSON.");
 
         if (mergedData.updatedParameters.Count > 0)
             editSummary.AppendLine("Updated parameters: " + string.Join(", ", mergedData.updatedParameters));

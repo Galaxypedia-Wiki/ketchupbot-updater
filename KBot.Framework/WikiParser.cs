@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 
 namespace KBot.Framework;
@@ -15,7 +16,7 @@ public static partial class WikiParser
         bool inLink = false, inTemplate = false;
         int lastIndex = 0;
 
-        Match match = pairRegex().Match(text);
+        Match match = pairRegex().Match(ProtectImageValues(text));
 
         while (match.Success)
         {
@@ -114,10 +115,10 @@ public static partial class WikiParser
     /// </exception>
     public static string ExtractInfobox(string text)
     {
-        Match match = SHIP_INFOBOX_REGEX().Match(text);
+        Match match = SHIP_INFOBOX_REGEX().Match(ProtectImageValues(text));
         if (!match.Success) throw new InvalidOperationException("No infobox found");
 
-        return match.Value;
+        return text.Substring(match.Index, match.Length);
     }
 
     /// <summary>
@@ -285,7 +286,13 @@ public static partial class WikiParser
     /// <returns>The new page wikitext with the replaced infobox. Or the original wikitext if the infobox could not be found.</returns>
     public static string ReplaceInfobox(string text, string infobox)
     {
-        return SHIP_INFOBOX_REGEX().Replace(text, infobox);
+        var result = new StringBuilder(text);
+        foreach (Match match in SHIP_INFOBOX_REGEX().Matches(ProtectImageValues(text)).Reverse())
+        {
+            result.Remove(match.Index, match.Length);
+            result.Insert(match.Index, infobox.Replace("$$", "$"));
+        }
+        return result.ToString();
     }
 
     /// <summary>
@@ -320,6 +327,64 @@ public static partial class WikiParser
         };
     }
 
+    public static Dictionary<string, string> MigrateImages(Dictionary<string, string> data)
+    {
+        var result = new Dictionary<string, string>(data);
+        if (data.ContainsKey("images") || !data.TryGetValue("image", out string? image))
+            return result;
+
+        Match file = singleImageRegex().Match(image);
+        if (file.Success)
+        {
+            result.Remove("image");
+            result["images"] = "[\n" + new JsonObject
+            {
+                ["title"] = "Overview",
+                ["src"] = file.Groups["src"].Value.Trim()
+            }.ToJsonString() + "\n]";
+            return result;
+        }
+
+        Match gallery = galleryRegex().Match(image);
+        if (!gallery.Success || gallery.Value != image || !image.StartsWith("<gallery>"))
+            return result;
+
+        var images = new List<string>();
+        foreach (string line in image["<gallery>".Length..^"</gallery>".Length].Split('\n'))
+        {
+            string entry = line.Trim();
+            if (entry.Length == 0) continue;
+            string[] parts = entry.Split('|');
+            if (parts.Length != 2 || string.IsNullOrWhiteSpace(parts[0]) ||
+                entry.Contains("{{") || entry.Contains("[["))
+                return result;
+
+            images.Add(new JsonObject
+            {
+                ["title"] = parts[1].Trim(),
+                ["src"] = parts[0].Trim()
+            }.ToJsonString());
+        }
+
+        if (images.Count == 0) return result;
+        result.Remove("image");
+        result["images"] = "[\n" + string.Join(",\n", images) + "\n]";
+        return result;
+    }
+
+    // Mask image markup while retaining offsets into the original wikitext.
+    private static string ProtectImageValues(string text)
+    {
+        char[] protectedText = text.ToCharArray();
+        foreach (Match match in imageValueRegex().Matches(text))
+        {
+            Group value = match.Groups["value"];
+            for (int i = value.Index; i < value.Index + value.Length; i++)
+                protectedText[i] = ' ';
+        }
+        return new string(protectedText);
+    }
+
     #region Regexes
 
     [GeneratedRegex(
@@ -332,6 +397,12 @@ public static partial class WikiParser
 
     [GeneratedRegex(@"\[\[|]]|\{\{|}}|\|")]
     private static partial Regex pairRegex();
+
+    [GeneratedRegex("""\|\s*images?\s*=\s*(?<value><gallery[^>]*>.*?</gallery>|\[(?:[^"\[\]]|"(?:\\.|[^"\\])*")*\])""", RegexOptions.Singleline)]
+    private static partial Regex imageValueRegex();
+
+    [GeneratedRegex(@"\A\[\[(?:File|Image):(?<src>[^\[\]\|\r\n]+)\]\]\z", RegexOptions.IgnoreCase)]
+    private static partial Regex singleImageRegex();
 
     [GeneratedRegex(@"<gallery.*?>.*?</gallery>", RegexOptions.Singleline)]
     private static partial Regex galleryRegex();

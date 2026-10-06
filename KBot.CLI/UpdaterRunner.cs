@@ -22,7 +22,8 @@ public class UpdaterRunner(IServiceProvider services, ILogger<UpdaterRunner> log
             await ShipProgressDisplay.RunAsync(progress =>
                 ships.First().Equals("all", StringComparison.CurrentCultureIgnoreCase)
                     ? updater.UpdateAllShips(progress: progress)
-                    : updater.MassUpdateShips(ships.ToList(), progress: progress), verbose);
+                    : updater.MassUpdateShips(ships.ToList(), progress: progress,
+                        infoboxDiff: ships.Length == 1 ? InfoboxDiffDisplay.Write : null), verbose || ships.Length == 1);
         }
 
         #endregion

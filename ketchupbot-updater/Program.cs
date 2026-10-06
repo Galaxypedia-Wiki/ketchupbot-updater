@@ -1,6 +1,5 @@
 using System.CommandLine;
 using System.Reflection;
-using DotNetEnv;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Serilog;
@@ -94,15 +93,40 @@ public class Program
             Console.WriteLine(
                 $"\nketchupbot-updater | v{Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "Development"} | {DateTime.Now}\n");
 
-            Env.Load();
+            HostApplicationBuilder applicationBuilder = Host.CreateApplicationBuilder(new HostApplicationBuilderSettings
+            {
+                ContentRootPath = Path.GetFullPath(parseResult.GetValue(secretsDirectoryOption)!)
+            });
+            applicationBuilder.Configuration.Sources.Clear();
+            applicationBuilder.Configuration.AddJsonFile("appsettings.json", true, false);
 
-            HostApplicationBuilder applicationBuilder = Host.CreateApplicationBuilder(args);
-            applicationBuilder.Configuration
-                .AddUserSecrets<Program>()
-                .AddEnvironmentVariables()
-                .AddJsonFile("appsettings.json",
-                    true,
-                    true);
+            string configPath = Path.Combine(applicationBuilder.Environment.ContentRootPath, "appsettings.json");
+            if (!OperatingSystem.IsWindows() && File.Exists(configPath))
+            {
+                try
+                {
+                    if ((File.GetUnixFileMode(configPath) & UnixFileMode.OtherRead) != 0)
+                        Log.Warning("Configuration file {ConfigPath} is readable by everyone and may expose credentials. " +
+                                    "Consider chmod 600 if the file is owned by the account running the application", configPath);
+                }
+                catch (IOException e)
+                {
+                    Log.Warning(e, "Could not check permissions for configuration file {ConfigPath}", configPath);
+                }
+                catch (UnauthorizedAccessException e)
+                {
+                    Log.Warning(e, "Could not check permissions for configuration file {ConfigPath}", configPath);
+                }
+            }
+
+            if (applicationBuilder.Environment.IsDevelopment())
+                applicationBuilder.Configuration.AddUserSecrets<Program>();
+
+            applicationBuilder.Configuration.AddEnvironmentVariables();
+
+            foreach (string key in new[] { "GIAPI_URL", "MWUSERNAME", "MWPASSWORD" })
+                if (string.IsNullOrWhiteSpace(applicationBuilder.Configuration[key]))
+                    throw new InvalidOperationException($"{key} not set");
 
             #region Configuration
 

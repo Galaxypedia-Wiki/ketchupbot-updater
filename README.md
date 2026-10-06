@@ -68,11 +68,18 @@ cd ketchupbot-updater
 ```
 
 ### Setting up secrets
-KetchupBot requires a few secrets (passwords) to run properly. These secrets can be stored in a few different ways, but the most common way is to use an `appsettings.json` file. You can create this file by copying the `appsettings.example.json` file and renaming it to `appsettings.json`. You can then fill in the values with your own secrets.
+Copy `ketchupbot-updater/appsettings.example.json` to `appsettings.json` and fill in `GIAPI_URL`, `MWUSERNAME`, and `MWPASSWORD`. All three settings must be non-empty. By default, the application reads this file from the executable's directory. Use `--secrets-directory /path/to/config` to select another directory; relative paths are resolved from the working directory.
 
-You can also use a `.env` file or environment variables to store secrets. They follow the same naming conventions as the `appsettings.json` file. Using environment variables will overwrite `appsettings.json`.
+You can supply the same keys through environment variables, which override JSON values. The JSON file is optional when all required settings are supplied through other sources. `.env` files are no longer loaded automatically.
 
-Whichever method you choose, you will have to put `appsettings.json` into the same directory as the executable. You can add your appsettings.json to the `ketchupbot-updater` project and set it to `Copy if newer` in the properties. This will automatically copy it to your build directory.
+For development, use .NET User Secrets:
+
+```bash
+dotnet user-secrets set "MWUSERNAME" "your-username" --project ketchupbot-updater
+dotnet user-secrets set "MWPASSWORD" "your-password" --project ketchupbot-updater
+```
+
+Set `DOTNET_ENVIRONMENT=Development` to load User Secrets. Configuration precedence is environment variables, then development User Secrets, then JSON. Keep credential files out of source control and restrict their permissions to the account running the updater.
 
 ### Building
 KetchupBot is considered mission critical by the Galaxypedia staff, and for that reason, we use strict coding practices and standards to ensure that the program cannot crash. All of these configurations and practices are advised via ESLint. For that reason, we highly recommend using a modern IDE when developing for KetchupBot. I (smallketchup82) personally use Jetbrains WebStorm, but others on the development team use VSCode with the ESLint extension. If you are using VSCode, go into your settings and make sure that the "experimental flag config" setting is on for the ESLint extension, otherwise it won't be able to use our rules.

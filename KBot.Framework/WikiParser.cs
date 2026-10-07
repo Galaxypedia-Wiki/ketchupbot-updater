@@ -220,6 +220,12 @@ public static partial class WikiParser
             if (string.IsNullOrEmpty(originalValue)) continue;
             string value = originalValue.Trim();
 
+            if (GlobalConfiguration.ParameterExclusions.Contains(key))
+            {
+                sanitizedData[key] = value;
+                continue;
+            }
+
             if ((value.Equals("no", StringComparison.OrdinalIgnoreCase) &&
                  !GlobalConfiguration.ParametersToNotDeleteIfValueIsNo.Contains(key)) ||
                 (value.Equals("yes", StringComparison.OrdinalIgnoreCase) &&
